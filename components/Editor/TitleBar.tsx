@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Input } from '@openameba/spindle-ui';
+import { Input } from '@/components/ui/input';
 import { useStore } from '@/lib/store';
 
 interface TitleBarProps {
@@ -75,8 +75,7 @@ export default function TitleBar({ bookId }: TitleBarProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="タイトルを入力..."
-          className="flex-1 text-lg font-medium"
-          variant="standard"
+          className="flex-1 text-lg font-medium border-none focus:ring-0"
         />
         
         <div className={`text-sm font-medium ${getSaveStatusColor()}`}>

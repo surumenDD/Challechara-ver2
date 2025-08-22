@@ -146,15 +146,15 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
           <div className="flex gap-2 justify-between items-center">
             <div className="flex gap-2">
               <Button
-                variant="ghost"
-                size="sm"
+                variant="lighted"
+                size="small"
                 onClick={handleSelectAll}
               >
                 全選択
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="lighted"
+                size="small"
                 onClick={handleSelectNone}
                 disabled={activeMaterialIds.length === 0}
               >
@@ -228,13 +228,12 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
 
                   {/* 削除ボタン */}
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="lighted"
+                    size="small"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteMaterial(material.id);
                     }}
-                    className="p-1 text-red-600 hover:bg-red-50"
                   >
                     <X className="w-4 h-4" />
                   </Button>

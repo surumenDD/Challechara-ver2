@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input } from '@openameba/spindle-ui';
+import { Button } from '@openameba/spindle-ui';
+import { Input } from '@/components/ui/input';
 import { X, BookOpen } from 'lucide-react';
 import { useStore, Book } from '@/lib/store';
 import { exportAsTxt } from '@/lib/file';
@@ -144,7 +145,7 @@ export default function HomePage() {
             title={query ? '検索結果が見つかりません' : 'ブックがありません'}
             description={query ? '別のキーワードで検索してみてください' : '新しいブックを作成して執筆を始めましょう'}
             action={
-              <Button variant="primary" onClick={handleNewBook}>
+              <Button variant="contained" onClick={handleNewBook}>
                 新しいブックを作成
               </Button>
             }
@@ -172,10 +173,9 @@ export default function HomePage() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">新しいブックを作成</h3>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="lighted"
+                size="small"
                 onClick={() => setShowNewBookDialog(false)}
-                className="p-1"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -199,13 +199,13 @@ export default function HomePage() {
 
               <div className="flex gap-2 justify-end">
                 <Button
-                  variant="ghost"
+                  variant="lighted"
                   onClick={() => setShowNewBookDialog(false)}
                 >
                   キャンセル
                 </Button>
                 <Button
-                  variant="primary"
+                  variant="contained"
                   onClick={handleCreateBook}
                   disabled={!newBookTitle.trim()}
                 >

@@ -3,7 +3,8 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useState, useCallback } from 'react';
-import { Button, Input } from '@openameba/spindle-ui';
+import { Button } from '@openameba/spindle-ui';
+import { Input } from '@/components/ui/input';
 import {
   Bold,
   Italic,
@@ -128,20 +129,18 @@ export default function RichEditor({ bookId }: RichEditorProps) {
       <div className="p-3 border-b border-gray-200 bg-gray-50 flex flex-wrap gap-1">
         {/* 基本装飾 */}
         <Button
-          variant={editor.isActive('bold') ? 'primary' : 'ghost'}
-          size="sm"
+          variant={editor.isActive('bold') ? 'contained' : 'lighted'}
+          size="small"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className="p-2"
           title="太字 (Ctrl+B)"
         >
           <Bold className="w-4 h-4" />
         </Button>
         
         <Button
-          variant={editor.isActive('italic') ? 'primary' : 'ghost'}
-          size="sm"
+          variant={editor.isActive('italic') ? 'contained' : 'lighted'}
+          size="small"
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className="p-2"
           title="斜体 (Ctrl+I)"
         >
           <Italic className="w-4 h-4" />
@@ -151,30 +150,27 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
         {/* 見出し */}
         <Button
-          variant={editor.isActive('heading', { level: 1 }) ? 'primary' : 'ghost'}
-          size="sm"
+          variant={editor.isActive('heading', { level: 1 }) ? 'contained' : 'lighted'}
+          size="small"
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          className="p-2"
           title="見出し1"
         >
           <Heading1 className="w-4 h-4" />
         </Button>
         
         <Button
-          variant={editor.isActive('heading', { level: 2 }) ? 'primary' : 'ghost'}
-          size="sm"
+          variant={editor.isActive('heading', { level: 2 }) ? 'contained' : 'lighted'}
+          size="small"
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className="p-2"
           title="見出し2"
         >
           <Heading2 className="w-4 h-4" />
         </Button>
         
         <Button
-          variant={editor.isActive('heading', { level: 3 }) ? 'primary' : 'ghost'}
-          size="sm"
+          variant={editor.isActive('heading', { level: 3 }) ? 'contained' : 'lighted'}
+          size="small"
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className="p-2"
           title="見出し3"
         >
           <Heading3 className="w-4 h-4" />
@@ -184,20 +180,18 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
         {/* リスト */}
         <Button
-          variant={editor.isActive('bulletList') ? 'primary' : 'ghost'}
-          size="sm"
+          variant={editor.isActive('bulletList') ? 'contained' : 'lighted'}
+          size="small"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className="p-2"
           title="箇条書き"
         >
           <List className="w-4 h-4" />
         </Button>
         
         <Button
-          variant={editor.isActive('orderedList') ? 'primary' : 'ghost'}
-          size="sm"
+          variant={editor.isActive('orderedList') ? 'contained' : 'lighted'}
+          size="small"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className="p-2"
           title="番号付きリスト"
         >
           <ListOrdered className="w-4 h-4" />
@@ -207,20 +201,18 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
         {/* その他 */}
         <Button
-          variant={editor.isActive('blockquote') ? 'primary' : 'ghost'}
-          size="sm"
+          variant={editor.isActive('blockquote') ? 'contained' : 'lighted'}
+          size="small"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className="p-2"
           title="引用"
         >
           <Quote className="w-4 h-4" />
         </Button>
         
         <Button
-          variant={editor.isActive('code') ? 'primary' : 'ghost'}
-          size="sm"
+          variant={editor.isActive('code') ? 'contained' : 'lighted'}
+          size="small"
           onClick={() => editor.chain().focus().toggleCode().run()}
-          className="p-2"
           title="コード"
         >
           <Code className="w-4 h-4" />
@@ -230,10 +222,9 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
         {/* ルビ振り */}
         <Button
-          variant="ghost"
-          size="sm"
+          variant="lighted"
+          size="small"
           onClick={handleAddRuby}
-          className="p-2"
           title="ルビ振り"
           disabled={!editor.state.selection.empty === false}
         >
@@ -244,10 +235,9 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
         {/* Undo/Redo */}
         <Button
-          variant="ghost"
-          size="sm"
+          variant="lighted"
+          size="small"
           onClick={() => editor.chain().focus().undo().run()}
-          className="p-2"
           title="元に戻す"
           disabled={!editor.can().undo()}
         >
@@ -255,10 +245,9 @@ export default function RichEditor({ bookId }: RichEditorProps) {
         </Button>
         
         <Button
-          variant="ghost"
-          size="sm"
+          variant="lighted"
+          size="small"
           onClick={() => editor.chain().focus().redo().run()}
-          className="p-2"
           title="やり直し"
           disabled={!editor.can().redo()}
         >
@@ -285,10 +274,9 @@ export default function RichEditor({ bookId }: RichEditorProps) {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">ルビ振り</h3>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="lighted"
+                size="small"
                 onClick={() => setShowRubyModal(false)}
-                className="p-1"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -315,18 +303,23 @@ export default function RichEditor({ bookId }: RichEditorProps) {
               </div>
 
               <div className="text-sm text-gray-600">
-                プレビュー: <ruby><rb>{selectedText}</rb><rt>{rubyText}</rt></ruby>
+                プレビュー:{' '}
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: `<ruby><rb>${selectedText}</rb><rt>${rubyText}</rt></ruby>`
+                  }}
+                />
               </div>
 
               <div className="flex gap-2 justify-end">
                 <Button
-                  variant="ghost"
+                  variant="lighted"
                   onClick={() => setShowRubyModal(false)}
                 >
                   キャンセル
                 </Button>
                 <Button
-                  variant="primary"
+                  variant="contained"
                   onClick={applyRuby}
                   disabled={!rubyText.trim()}
                 >
