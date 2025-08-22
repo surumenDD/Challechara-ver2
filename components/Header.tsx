@@ -32,9 +32,8 @@ export default function Header() {
 
       <div className="flex items-center gap-2">
         <Button
-          variant="ghost"
-          size="sm"
-          className="p-2"
+          variant="lighted"
+          size="small"
           aria-label="ヘルプ"
         >
           <HelpCircle className="w-5 h-5" />

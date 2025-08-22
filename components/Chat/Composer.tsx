@@ -52,9 +52,8 @@ export default function Composer({ onSend, disabled = false, placeholder = "ãƒ¡ã
         <Button
           onClick={handleSubmit}
           disabled={!content.trim() || disabled || isSubmitting}
-          variant="primary"
-          size="sm"
-          className="px-3 self-end"
+          variant="contained"
+          size="small"
         >
           {isSubmitting ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

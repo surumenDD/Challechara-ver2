@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Input } from '@openameba/spindle-ui';
+import { Button } from '@openameba/spindle-ui';
+import { Input } from '@/components/ui/input';
 import { Search, Grid, List, ArrowUpDown, Plus } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
@@ -58,27 +59,24 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder="ブックを検索... (/ でフォーカス)"
-              className="w-80 pl-10 pr-4"
-              size="sm"
+              className="w-80 pl-10 pr-4 h-8 text-sm"
             />
           </div>
 
           {/* 表示切替 */}
           <div className="flex border border-gray-300 rounded-lg overflow-hidden">
             <Button
-              variant={viewMode === 'grid' ? 'primary' : 'ghost'}
-              size="sm"
+              variant={viewMode === 'grid' ? 'contained' : 'lighted'}
+              size="small"
               onClick={() => setViewMode('grid')}
-              className="rounded-none px-3"
               title="グリッド表示"
             >
               <Grid className="w-4 h-4" />
             </Button>
             <Button
-              variant={viewMode === 'list' ? 'primary' : 'ghost'}
-              size="sm"
+              variant={viewMode === 'list' ? 'contained' : 'lighted'}
+              size="small"
               onClick={() => setViewMode('list')}
-              className="rounded-none px-3 border-l border-gray-300"
               title="リスト表示"
             >
               <List className="w-4 h-4" />
@@ -88,10 +86,9 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
           {/* 並び替え */}
           <div className="relative">
             <Button
-              variant="ghost"
-              size="sm"
+              variant="lighted"
+              size="small"
               onClick={() => setShowSortMenu(!showSortMenu)}
-              className="flex items-center gap-2 px-3"
             >
               <ArrowUpDown className="w-4 h-4" />
               {currentSortLabel}
@@ -119,10 +116,9 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
 
           {/* 新規作成ボタン */}
           <Button
-            variant="primary"
-            size="sm"
+            variant="contained"
+            size="small"
             onClick={onNewBook}
-            className="flex items-center gap-2 px-4"
           >
             <Plus className="w-4 h-4" />
             新規作成

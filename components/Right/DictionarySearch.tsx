@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Button, Input } from '@openameba/spindle-ui';
+import { Button } from '@openameba/spindle-ui';
+import { Input } from '@/components/ui/input';
 import { Search, Book, Tag } from 'lucide-react';
 import ChatWindow from '../Chat/ChatWindow';
 import Composer from '../Chat/Composer';
@@ -123,9 +124,8 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
           <Button
             onClick={handleSearch}
             disabled={!searchQuery.trim() || isSearching}
-            variant="primary"
-            size="sm"
-            className="px-4"
+            variant="contained"
+            size="small"
           >
             <Search className="w-4 h-4" />
           </Button>

@@ -112,10 +112,9 @@ export default function EditorPage() {
         <div className="p-3 border-b border-gray-200 flex justify-between items-center">
           <h2 className="font-semibold">辞書・資料</h2>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="lighted"
+            size="small"
             onClick={() => setRightPanelOpen(false)}
-            className="p-1"
           >
             <X className="w-4 h-4" />
           </Button>
@@ -180,10 +179,9 @@ export default function EditorPage() {
         {/* タブレット用右パネル開閉ボタン */}
         {isTablet && (
           <Button
-            variant="ghost"
-            size="sm"
+            variant="lighted"
+            size="small"
             onClick={() => setRightPanelOpen(!ui.rightPanelOpen)}
-            className="mr-4"
           >
             <Menu className="w-5 h-5" />
           </Button>
