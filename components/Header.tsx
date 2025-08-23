@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@openameba/spindle-ui';
+import { Button } from '@/components/ui/button';
 import { BookOpen, HelpCircle } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

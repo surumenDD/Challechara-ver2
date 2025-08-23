@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Button } from '@openameba/spindle-ui';
+import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
 
 interface ComposerProps {
@@ -52,7 +52,7 @@ export default function Composer({ onSend, disabled = false, placeholder = "ãƒ¡ã
         <Button
           onClick={handleSubmit}
           disabled={!content.trim() || disabled || isSubmitting}
-          variant="primary"
+          variant="default"
           size="sm"
           className="px-3 self-end"
         >

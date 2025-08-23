@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { Button } from '@openameba/spindle-ui';
 import { Menu, X } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import Header from '@/components/Header';
@@ -15,6 +15,15 @@ import DictionarySearch from '@/components/Right/DictionarySearch';
 import MaterialUpload from '@/components/Right/MaterialUpload';
 import MaterialChat from '@/components/Right/MaterialChat';
 
+export async function generateStaticParams() {
+  // Generate static params for dummy books
+  const bookIds = Array.from({ length: 12 }, (_, i) => ({
+    id: `book-${i + 1}`
+  }));
+  
+  return bookIds;
+}
+
 export default function EditorPage() {
   const params = useParams();
   const bookId = params.id as string;
@@ -26,8 +35,7 @@ export default function EditorPage() {
     setRightTab, 
     setRightSubTab,
     setRightPanelOpen,
-    setCurrentBookId,
-    initializeBooks
+    setCurrentBookId
   } = useStore();
 
   const [isTablet, setIsTablet] = useState(false);
@@ -53,10 +61,11 @@ export default function EditorPage() {
   useEffect(() => {
     if (!book && books.length === 0) {
       console.log('No books found, initializing...');
+      // ストアの初期化を強制実行
+      const { initializeBooks } = useStore.getState();
       initializeBooks();
     }
-  }, [book, books.length, initializeBooks]);
-
+  }, [book, books.length]);
   if (!book) {
     return (
       <div className="h-screen flex flex-col bg-gray-50">
@@ -70,7 +79,7 @@ export default function EditorPage() {
               指定されたブックは存在しないか、削除されている可能性があります。
             </p>
             <Button
-              variant="default"
+              variant="primary"
               onClick={() => window.location.href = '/'}
               className="mt-4"
             >

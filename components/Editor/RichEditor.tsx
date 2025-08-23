@@ -3,7 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useState, useCallback } from 'react';
-import { Button } from '@openameba/spindle-ui';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Bold,
@@ -31,10 +31,12 @@ export default function RichEditor({ bookId }: RichEditorProps) {
   const [showRubyModal, setShowRubyModal] = useState(false);
   const [rubyText, setRubyText] = useState('');
   const [selectedText, setSelectedText] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
 
   const book = books.find(b => b.id === bookId);
   
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit.configure({
         heading: {
@@ -81,7 +83,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
   const applyRuby = useCallback(() => {
     if (!editor || !selectedText || !rubyText) return;
 
-    const rubyHtml = `<ruby><rb>${selectedText}</rb><rt>${rubyText}</rt></ruby>`;
+    const rubyHtml = `<ruby>{selectedText}<rt>${rubyText}</rt></ruby>`;
     editor.chain().focus().insertContent(rubyHtml).run();
     
     setShowRubyModal(false);
@@ -90,6 +92,11 @@ export default function RichEditor({ bookId }: RichEditorProps) {
   }, [editor, selectedText, rubyText]);
 
   // キーボードショートカット
+  // ハイドレーション後にマウント状態を更新
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
@@ -129,7 +136,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
       <div className="p-3 border-b border-gray-200 bg-gray-50 flex flex-wrap gap-1">
         {/* 基本装飾 */}
         <Button
-          variant={editor.isActive('bold') ? 'primary' : 'ghost'}
+          variant={editor.isActive('bold') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
           className="p-2"
@@ -139,7 +146,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
         </Button>
         
         <Button
-          variant={editor.isActive('italic') ? 'primary' : 'ghost'}
+          variant={editor.isActive('italic') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className="p-2"
@@ -152,7 +159,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
         {/* 見出し */}
         <Button
-          variant={editor.isActive('heading', { level: 1 }) ? 'primary' : 'ghost'}
+          variant={editor.isActive('heading', { level: 1 }) ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           className="p-2"
@@ -162,7 +169,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
         </Button>
         
         <Button
-          variant={editor.isActive('heading', { level: 2 }) ? 'primary' : 'ghost'}
+          variant={editor.isActive('heading', { level: 2 }) ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           className="p-2"
@@ -172,7 +179,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
         </Button>
         
         <Button
-          variant={editor.isActive('heading', { level: 3 }) ? 'primary' : 'ghost'}
+          variant={editor.isActive('heading', { level: 3 }) ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           className="p-2"
@@ -185,7 +192,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
         {/* リスト */}
         <Button
-          variant={editor.isActive('bulletList') ? 'primary' : 'ghost'}
+          variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className="p-2"
@@ -195,7 +202,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
         </Button>
         
         <Button
-          variant={editor.isActive('orderedList') ? 'primary' : 'ghost'}
+          variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className="p-2"
@@ -208,7 +215,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
         {/* その他 */}
         <Button
-          variant={editor.isActive('blockquote') ? 'primary' : 'ghost'}
+          variant={editor.isActive('blockquote') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           className="p-2"
@@ -218,7 +225,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
         </Button>
         
         <Button
-          variant={editor.isActive('code') ? 'primary' : 'ghost'}
+          variant={editor.isActive('code') ? 'default' : 'ghost'}
           size="sm"
           onClick={() => editor.chain().focus().toggleCode().run()}
           className="p-2"
@@ -269,7 +276,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
       {/* エディタ */}
       <div className="flex-1 overflow-y-auto">
-        <EditorContent editor={editor} />
+        { isMounted ? <EditorContent editor={editor} /> : <div className="p-8 text-center text-gray-500">Loading editor...</div> }
       </div>
 
       {/* フッター */}
@@ -316,7 +323,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
               </div>
 
               <div className="text-sm text-gray-600">
-                プレビュー: <ruby><rb>{selectedText}</rb><rt>{rubyText}</rt></ruby>
+                プレビュー: <ruby>{selectedText}<rt>{rubyText}</rt></ruby>
               </div>
 
               <div className="flex gap-2 justify-end">
@@ -327,7 +334,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
                   キャンセル
                 </Button>
                 <Button
-                  variant="primary"
+                  variant="default"
                   onClick={applyRuby}
                   disabled={!rubyText.trim()}
                 >

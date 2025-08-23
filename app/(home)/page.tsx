@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@openameba/spindle-ui';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, BookOpen } from 'lucide-react';
 import { useStore, Book } from '@/lib/store';
@@ -152,7 +152,7 @@ export default function HomePage() {
             title={query ? '検索結果が見つかりません' : 'ブックがありません'}
             description={query ? '別のキーワードで検索してみてください' : '新しいブックを作成して執筆を始めましょう'}
             action={
-              <Button variant="primary" onClick={handleNewBook}>
+              <Button variant="default" onClick={handleNewBook}>
                 新しいブックを作成
               </Button>
             }
@@ -213,7 +213,7 @@ export default function HomePage() {
                   キャンセル
                 </Button>
                 <Button
-                  variant="primary"
+                  variant="default"
                   onClick={handleCreateBook}
                   disabled={!newBookTitle.trim()}
                 >

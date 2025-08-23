@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { Button } from '@openameba/spindle-ui';
+import { Button } from '@/components/ui/button';
 import { Upload, X } from 'lucide-react';
 import { useStore, Material } from '@/lib/store';
 import { extractText, formatFileSize, formatRelativeTime } from '@/lib/file';

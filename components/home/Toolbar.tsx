@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@openameba/spindle-ui';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Grid, List, ArrowUpDown, Plus } from 'lucide-react';
 import { useStore } from '@/lib/store';
@@ -60,15 +60,13 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
               onKeyDown={handleSearchKeyDown}
               placeholder="ブックを検索... (/ でフォーカス)"
               className="w-80 pl-10 pr-4"
-              size="sm"
             />
           </div>
 
           {/* 表示切替 */}
           <div className="flex border border-gray-300 rounded-lg overflow-hidden">
             <Button
-              variant={viewMode === 'grid' ? 'primary' : 'ghost'}
-              size="sm"
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
               onClick={() => setViewMode('grid')}
               className="rounded-none px-3"
               title="グリッド表示"
@@ -76,8 +74,7 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
               <Grid className="w-4 h-4" />
             </Button>
             <Button
-              variant={viewMode === 'list' ? 'primary' : 'ghost'}
-              size="sm"
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
               onClick={() => setViewMode('list')}
               className="rounded-none px-3 border-l border-gray-300"
               title="リスト表示"
@@ -90,7 +87,6 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
           <div className="relative">
             <Button
               variant="ghost"
-              size="sm"
               onClick={() => setShowSortMenu(!showSortMenu)}
               className="flex items-center gap-2 px-3"
             >
@@ -120,8 +116,7 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
 
           {/* 新規作成ボタン */}
           <Button
-            variant="primary"
-            size="sm"
+            variant="default"
             onClick={onNewBook}
             className="flex items-center gap-2 px-4"
           >

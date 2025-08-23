@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { Button } from '@openameba/spindle-ui';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Upload, Search, ChevronDown } from 'lucide-react';
 import { useStore, Episode } from '@/lib/store';
@@ -160,7 +160,6 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
             placeholder="ソースを検索..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            size="sm"
           />
           
           <div className="flex gap-2">
@@ -175,7 +174,6 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
             </select>
             <Button
               variant="ghost"
-              size="sm"
               onClick={handleSelectAll}
               disabled={bookEpisodes.length === 0}
             >
@@ -183,7 +181,6 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
             </Button>
             <Button
               variant="ghost"
-              size="sm"
               onClick={handleSelectNone}
               disabled={activeSourceIds.length === 0}
             >
@@ -222,8 +219,7 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
             {activeSourceIds.length}件選択中
           </span>
           <Button
-            variant="primary"
-            size="sm"
+            variant="default"
             onClick={handleSearch}
             disabled={activeSourceIds.length === 0}
             className="flex items-center gap-2"
