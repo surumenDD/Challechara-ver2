@@ -1,0 +1,358 @@
+'use client';
+
+import { useState, useRef, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Upload, Search, Plus, FileText, MoreVertical } from 'lucide-react';
+import { useStore, ProjectFile } from '@/lib/store';
+import { extractText } from '@/lib/file';
+
+interface FileManagerProps {
+  bookId: string;
+}
+
+export default function FileManager({ bookId }: FileManagerProps) {
+  const {
+    books,
+    addProjectFile,
+    updateProjectFile,
+    deleteProjectFile,
+    setActiveFile,
+    activeSourceIds,
+    setActiveSourceIds,
+    setLeftTab
+  } = useStore();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'title'>('newest');
+  const [dragOver, setDragOver] = useState(false);
+  const [showNewFileDialog, setShowNewFileDialog] = useState(false);
+  const [newFileName, setNewFileName] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const book = books.find(b => b.id === bookId);
+  const files = book?.files || [];
+  const activeFileId = book?.activeFileId;
+
+  // ファイルアップロード処理
+  const handleFiles = useCallback(async (uploadFiles: FileList) => {
+    for (const file of Array.from(uploadFiles)) {
+      if (file.type.match(/^(text\/|application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document))/)) {
+        try {
+          const content = await extractText(file);
+          const projectFile: ProjectFile = {
+            id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            title: file.name,
+            content,
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          };
+          addProjectFile(bookId, projectFile);
+        } catch (error) {
+          console.error('ファイル処理エラー:', error);
+        }
+      }
+    }
+  }, [bookId, addProjectFile]);
+
+  // 新規ファイル作成
+  const handleCreateNewFile = useCallback(() => {
+    if (!newFileName.trim()) return;
+    
+    const fileName = newFileName.trim().endsWith('.txt') 
+      ? newFileName.trim() 
+      : `${newFileName.trim()}.txt`;
+      
+    const projectFile: ProjectFile = {
+      id: `file-${Date.now()}`,
+      title: fileName,
+      content: `# ${fileName.replace('.txt', '')}\n\n`,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    
+    addProjectFile(bookId, projectFile);
+    setActiveFile(bookId, projectFile.id);
+    setShowNewFileDialog(false);
+    setNewFileName('');
+  }, [newFileName, bookId, addProjectFile, setActiveFile]);
+
+  // ドラッグ&ドロップ
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const uploadFiles = e.dataTransfer.files;
+    if (uploadFiles.length > 0) {
+      handleFiles(uploadFiles);
+    }
+  }, [handleFiles]);
+
+  // ファイル選択
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadFiles = e.target.files;
+    if (uploadFiles) {
+      handleFiles(uploadFiles);
+    }
+  }, [handleFiles]);
+
+  // フィルタリング・ソート
+  const filteredAndSortedFiles = files
+    .filter(file => 
+      file.title.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      switch (sortOrder) {
+        case 'newest':
+          return b.updatedAt - a.updatedAt;
+        case 'oldest':
+          return a.updatedAt - b.updatedAt;
+        case 'title':
+          return a.title.localeCompare(b.title);
+        default:
+          return 0;
+      }
+    });
+
+  // ファイル選択処理
+  const handleFileClick = useCallback((fileId: string) => {
+    setActiveFile(bookId, fileId);
+  }, [bookId, setActiveFile]);
+
+  // チャット用ファイル選択
+  const handleToggleSelect = useCallback((fileId: string) => {
+    const newSelection = activeSourceIds.includes(fileId)
+      ? activeSourceIds.filter(id => id !== fileId)
+      : [...activeSourceIds, fileId];
+    setActiveSourceIds(newSelection);
+  }, [activeSourceIds, setActiveSourceIds]);
+
+  const handleSelectAll = useCallback(() => {
+    const allIds = filteredAndSortedFiles.map(f => f.id);
+    setActiveSourceIds(allIds);
+  }, [filteredAndSortedFiles, setActiveSourceIds]);
+
+  const handleSelectNone = useCallback(() => {
+    setActiveSourceIds([]);
+  }, [setActiveSourceIds]);
+
+  // チャット実行
+  const handleStartChat = useCallback(() => {
+    if (activeSourceIds.length > 0) {
+      setLeftTab('chat');
+    }
+  }, [activeSourceIds, setLeftTab]);
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* ヘッダー */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="font-semibold text-lg">ファイル管理</h2>
+          <Button
+            size="sm"
+            onClick={() => setShowNewFileDialog(true)}
+            className="flex items-center gap-1"
+          >
+            <Plus className="w-4 h-4" />
+            新規
+          </Button>
+        </div>
+        
+        {/* アップロードエリア */}
+        <div
+          className={`dropzone p-4 mb-3 cursor-pointer ${dragOver ? 'drag-over' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <div className="text-center">
+            <Upload className="w-6 h-6 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm text-gray-600">
+              ファイルをドラッグ&ドロップ
+              <br />
+              または<span className="text-blue-600">クリックして選択</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              PDF, TXT, MD, DOCX対応
+            </p>
+          </div>
+        </div>
+        
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".pdf,.txt,.md,.docx"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+
+        {/* 検索・ソート */}
+        <div className="space-y-2">
+          <Input
+            placeholder="ファイルを検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          
+          <div className="flex gap-2">
+            <select
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as any)}
+              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+            >
+              <option value="newest">新しい順</option>
+              <option value="oldest">古い順</option>
+              <option value="title">タイトル順</option>
+            </select>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSelectAll}
+              disabled={files.length === 0}
+            >
+              全選択
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSelectNone}
+              disabled={activeSourceIds.length === 0}
+            >
+              解除
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* ファイル一覧 */}
+      <div className="flex-1 overflow-y-auto">
+        {filteredAndSortedFiles.length === 0 ? (
+          <div className="p-4 text-center text-gray-500">
+            <p>ファイルがありません</p>
+            <p className="text-sm mt-1">新規作成またはアップロードしてください</p>
+          </div>
+        ) : (
+          <div className="p-2">
+            {filteredAndSortedFiles.map((file) => (
+              <div
+                key={file.id}
+                className={`file-item p-3 mb-2 rounded border cursor-pointer transition-colors ${
+                  activeFileId === file.id 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={activeSourceIds.includes(file.id)}
+                    onChange={() => handleToggleSelect(file.id)}
+                    className="mt-1"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  
+                  <FileText className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" />
+                  
+                  <div 
+                    className="flex-1 min-w-0"
+                    onClick={() => handleFileClick(file.id)}
+                  >
+                    <h3 className="font-medium text-sm truncate">{file.title}</h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(file.updatedAt).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                      {file.content.substring(0, 100)}...
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* フッター */}
+      <div className="p-4 border-t border-gray-200">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-600">
+            {activeSourceIds.length}件選択中
+          </span>
+          <Button
+            variant="default"
+            onClick={handleStartChat}
+            disabled={activeSourceIds.length === 0}
+            className="flex items-center gap-2"
+          >
+            <Search className="w-4 h-4" />
+            チャット
+          </Button>
+        </div>
+      </div>
+
+      {/* 新規ファイル作成ダイアログ */}
+      {showNewFileDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">新しいファイルを作成</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowNewFileDialog(false)}
+                className="p-1"
+              >
+                ×
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">ファイル名</label>
+                <Input
+                  value={newFileName}
+                  onChange={(e) => setNewFileName(e.target.value)}
+                  placeholder="ファイル名を入力..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCreateNewFile();
+                    }
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowNewFileDialog(false)}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={handleCreateNewFile}
+                  disabled={!newFileName.trim()}
+                >
+                  作成
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

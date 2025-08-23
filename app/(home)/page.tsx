@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, BookOpen } from 'lucide-react';
-import { useStore, Book } from '@/lib/store';
+import { useStore, Book, ProjectFile } from '@/lib/store';
 import { exportAsTxt } from '@/lib/file';
 import Header from '@/components/Header';
 import Toolbar from '@/components/home/Toolbar';
@@ -70,6 +70,14 @@ export default function HomePage() {
   const handleCreateBook = () => {
     if (!newBookTitle.trim()) return;
 
+    const defaultFile = {
+      id: `file-${Date.now()}`,
+      title: `${newBookTitle.trim()}.txt`,
+      content: `# ${newBookTitle.trim()}\n\nここに本文を入力してください...`,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
     const newBook: Book = {
       id: `book-${Date.now()}`,
       title: newBookTitle.trim(),
@@ -77,7 +85,9 @@ export default function HomePage() {
       updatedAt: Date.now(),
       sourceCount: 0,
       archived: false,
-      content: '<p>ここに本文を入力してください...</p>'
+      content: '<p>ここに本文を入力してください...</p>',
+      files: [defaultFile],
+      activeFileId: defaultFile.id
     };
 
     addBook(newBook);

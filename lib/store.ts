@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type ProjectFile = {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
 export type Episode = {
   id: string;
   title: string;
@@ -30,10 +38,12 @@ export type Book = {
   sourceCount: number;
   archived?: boolean;
   content?: string;
+  files?: ProjectFile[];
+  activeFileId?: string | null;
 };
 
 type UIState = {
-  leftTab: 'manage' | 'chat';
+  leftTab: 'files' | 'chat';
   rightTab: 'dict' | 'material';
   rightSubTab: 'upload' | 'chat';
   rightPanelOpen: boolean;
@@ -42,12 +52,18 @@ type UIState = {
 type AppStore = {
   // UI State
   ui: UIState;
-  setLeftTab: (tab: 'manage' | 'chat') => void;
+  setLeftTab: (tab: 'files' | 'chat') => void;
   setRightTab: (tab: 'dict' | 'material') => void;
   setRightSubTab: (tab: 'upload' | 'chat') => void;
   setRightPanelOpen: (open: boolean) => void;
 
-  // Episodes & Materials
+  // Project Files
+  addProjectFile: (bookId: string, file: ProjectFile) => void;
+  updateProjectFile: (bookId: string, file: ProjectFile) => void;
+  deleteProjectFile: (bookId: string, fileId: string) => void;
+  setActiveFile: (bookId: string, fileId: string | null) => void;
+
+  // Episodes & Materials (legacy)
   episodes: Record<string, Episode[]>;
   materials: Record<string, Material[]>;
   activeSourceIds: string[];
@@ -106,15 +122,35 @@ const generateDummyBooks = (): Book[] => {
     '写真日記'
   ];
 
-  return Array.from({ length: 12 }, (_, i) => ({
-    id: `book-${i + 1}`,
-    title: titles[i],
-    coverEmoji: emojis[i],
-    updatedAt: Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000, // 60日以内のランダム
-    sourceCount: Math.floor(Math.random() * 3) + 1,
-    archived: false,
-    content: `<h1>${titles[i]}</h1><p>ここに本文を入力してください...</p>`
-  }));
+  return Array.from({ length: 12 }, (_, i) => {
+    const mainFile: ProjectFile = {
+      id: `file-${i + 1}-main`,
+      title: `${titles[i]}.txt`,
+      content: `# ${titles[i]}\n\nここに本文を入力してください...\n\n## メモ\n- アイデア1\n- アイデア2`,
+      createdAt: Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000,
+      updatedAt: Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+    };
+
+    const memoFile: ProjectFile = {
+      id: `file-${i + 1}-memo`,
+      title: `${titles[i]}_メモ.txt`,
+      content: `# ${titles[i]}のメモ\n\n参考資料や思いついたことを記録します。\n\n- キーワード: ${titles[i]}\n- 重要度: ★★★`,
+      createdAt: Date.now() - Math.random() * 25 * 24 * 60 * 60 * 1000,
+      updatedAt: Date.now() - Math.random() * 25 * 24 * 60 * 60 * 1000
+    };
+
+    return {
+      id: `book-${i + 1}`,
+      title: titles[i],
+      coverEmoji: emojis[i],
+      updatedAt: Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000, // 60日以内のランダム
+      sourceCount: 2,
+      archived: false,
+      content: `<h1>${titles[i]}</h1><p>ここに本文を入力してください...</p>`,
+      files: [mainFile, memoFile],
+      activeFileId: mainFile.id
+    };
+  });
 };
 
 export const useStore = create<AppStore>()(
@@ -122,7 +158,7 @@ export const useStore = create<AppStore>()(
     (set, get) => ({
       // UI State初期値
       ui: {
-        leftTab: 'manage',
+        leftTab: 'files',
         rightTab: 'dict',
         rightSubTab: 'upload',
         rightPanelOpen: false
@@ -131,6 +167,55 @@ export const useStore = create<AppStore>()(
       setRightTab: (tab) => set((state) => ({ ui: { ...state.ui, rightTab: tab } })),
       setRightSubTab: (tab) => set((state) => ({ ui: { ...state.ui, rightSubTab: tab } })),
       setRightPanelOpen: (open) => set((state) => ({ ui: { ...state.ui, rightPanelOpen: open } })),
+
+      // Project Files
+      addProjectFile: (bookId, file) => set((state) => ({
+        books: state.books.map(book => 
+          book.id === bookId 
+            ? { 
+                ...book, 
+                files: [...(book.files || []), file],
+                activeFileId: book.activeFileId || file.id,
+                updatedAt: Date.now()
+              }
+            : book
+        )
+      })),
+      
+      updateProjectFile: (bookId, file) => set((state) => ({
+        books: state.books.map(book => 
+          book.id === bookId 
+            ? { 
+                ...book, 
+                files: (book.files || []).map(f => f.id === file.id ? file : f),
+                updatedAt: Date.now()
+              }
+            : book
+        )
+      })),
+      
+      deleteProjectFile: (bookId, fileId) => set((state) => ({
+        books: state.books.map(book => 
+          book.id === bookId 
+            ? { 
+                ...book, 
+                files: (book.files || []).filter(f => f.id !== fileId),
+                activeFileId: book.activeFileId === fileId 
+                  ? (book.files || []).find(f => f.id !== fileId)?.id || null
+                  : book.activeFileId,
+                updatedAt: Date.now()
+              }
+            : book
+        )
+      })),
+
+      setActiveFile: (bookId, fileId) => set((state) => ({
+        books: state.books.map(book => 
+          book.id === bookId 
+            ? { ...book, activeFileId: fileId, updatedAt: Date.now() }
+            : book
+        )
+      })),
 
       // Episodes & Materials
       episodes: {},
@@ -241,6 +326,34 @@ export const useStore = create<AppStore>()(
           console.log('Initializing books with dummy data');
           return { books: generateDummyBooks() };
         }
+        
+        // 既存のブックを新しいファイル構造に移行
+        let needsMigration = false;
+        const migratedBooks = state.books.map(book => {
+          if (!book.files && book.content) {
+            needsMigration = true;
+            const mainFile: ProjectFile = {
+              id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              title: `${book.title}.txt`,
+              content: book.content.replace(/<[^>]*>/g, ''), // HTMLタグを除去してプレーンテキストに
+              createdAt: book.updatedAt || Date.now(),
+              updatedAt: book.updatedAt || Date.now()
+            };
+            
+            return {
+              ...book,
+              files: [mainFile],
+              activeFileId: mainFile.id
+            };
+          }
+          return book;
+        });
+        
+        if (needsMigration) {
+          console.log('Migrated books to new file structure');
+          return { books: migratedBooks };
+        }
+        
         console.log('Books already exist, count:', state.books.length);
         return state;
       }),

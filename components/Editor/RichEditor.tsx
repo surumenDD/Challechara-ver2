@@ -27,13 +27,14 @@ interface RichEditorProps {
 }
 
 export default function RichEditor({ bookId }: RichEditorProps) {
-  const { books, updateBook } = useStore();
+  const { books, updateProjectFile } = useStore();
   const [showRubyModal, setShowRubyModal] = useState(false);
   const [rubyText, setRubyText] = useState('');
   const [selectedText, setSelectedText] = useState('');
   const [isMounted, setIsMounted] = useState(false);
 
   const book = books.find(b => b.id === bookId);
+  const activeFile = book?.files?.find(f => f.id === book.activeFileId);
   
   const editor = useEditor({
     immediatelyRender: false,
@@ -44,28 +45,38 @@ export default function RichEditor({ bookId }: RichEditorProps) {
         },
       }),
     ],
-    content: book?.content || '<p>ここに本文を入力してください...</p>',
+    content: activeFile?.content || '<p>ファイルを選択または作成してください...</p>',
     onUpdate: ({ editor }) => {
-      // 自動保存
-      const content = editor.getHTML();
-      if (book) {
-        const updatedBook = { ...book, content, updatedAt: Date.now() };
-        updateBook(updatedBook);
+      // アクティブファイルの内容を自動保存
+      if (activeFile) {
+        const content = editor.getHTML();
+        const updatedFile = { 
+          ...activeFile, 
+          content, 
+          updatedAt: Date.now() 
+        };
+        updateProjectFile(bookId, updatedFile);
       }
     },
     editorProps: {
       attributes: {
-        class: 'prose max-w-none focus:outline-none',
+        class: `prose max-w-none focus:outline-none ${!activeFile ? 'pointer-events-none opacity-50' : ''}`,
       },
     },
   });
 
-  // ブック変更時にエディタ内容を更新
+  // アクティブファイル変更時にエディタ内容を更新
   useEffect(() => {
-    if (editor && book && editor.getHTML() !== book.content) {
-      editor.commands.setContent(book.content || '<p>ここに本文を入力してください...</p>');
+    if (editor) {
+      if (activeFile) {
+        if (editor.getHTML() !== activeFile.content) {
+          editor.commands.setContent(activeFile.content);
+        }
+      } else {
+        editor.commands.setContent('<p>ファイルを選択または作成してください...</p>');
+      }
     }
-  }, [editor, book?.content]);
+  }, [editor, activeFile?.content, activeFile?.id]);
 
   // ルビ振り機能
   const handleAddRuby = useCallback(() => {
@@ -123,7 +134,8 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
   const getWordCount = () => {
     if (!editor) return 0;
-    return editor.storage.characterCount?.characters() || 0;
+    const text = editor.getText();
+    return text.length;
   };
 
   if (!editor) {
