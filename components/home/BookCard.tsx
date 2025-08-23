@@ -20,10 +20,16 @@ export default function BookCard({ book, onClick, onAction }: BookCardProps) {
     onAction(action);
   };
 
+  const handleCardClick = () => {
+    console.log('Card clicked:', book.id);
+    onClick();
+  };
+
   return (
     <div
       className="h-44 rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-all duration-200 p-4 cursor-pointer relative group"
-      onClick={onClick}
+      data-testid="book-card"
+      onClick={handleCardClick}
     >
       {/* ヘッダー */}
       <div className="flex items-start justify-between mb-3">

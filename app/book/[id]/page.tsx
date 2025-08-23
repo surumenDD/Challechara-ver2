@@ -43,6 +43,8 @@ export default function EditorPage() {
   const book = books.find(b => b.id === bookId);
 
   useEffect(() => {
+    console.log('Editor page loaded for book:', bookId);
+    console.log('Available books:', books.map(b => b.id));
     setCurrentBookId(bookId);
     
     const checkScreenSize = () => {
@@ -55,6 +57,15 @@ export default function EditorPage() {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, [bookId, setCurrentBookId]);
 
+  // ブックが見つからない場合、ダミーブックを生成
+  useEffect(() => {
+    if (!book && books.length === 0) {
+      console.log('No books found, initializing...');
+      // ストアの初期化を強制実行
+      const { initializeBooks } = useStore.getState();
+      initializeBooks();
+    }
+  }, [book, books.length]);
   if (!book) {
     return (
       <div className="h-screen flex flex-col bg-gray-50">
@@ -67,6 +78,13 @@ export default function EditorPage() {
             <p className="text-gray-600">
               指定されたブックは存在しないか、削除されている可能性があります。
             </p>
+            <Button
+              variant="primary"
+              onClick={() => window.location.href = '/'}
+              className="mt-4"
+            >
+              ホームに戻る
+            </Button>
           </div>
         </div>
       </div>

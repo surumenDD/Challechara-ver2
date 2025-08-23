@@ -112,7 +112,8 @@ const generateDummyBooks = (): Book[] => {
     coverEmoji: emojis[i],
     updatedAt: Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000, // 60日以内のランダム
     sourceCount: Math.floor(Math.random() * 3) + 1,
-    archived: false
+    archived: false,
+    content: `<h1>${titles[i]}</h1><p>ここに本文を入力してください...</p>`
   }));
 };
 
@@ -237,8 +238,10 @@ export const useStore = create<AppStore>()(
       
       initializeBooks: () => set((state) => {
         if (state.books.length === 0) {
+          console.log('Initializing books with dummy data');
           return { books: generateDummyBooks() };
         }
+        console.log('Books already exist, count:', state.books.length);
         return state;
       }),
 

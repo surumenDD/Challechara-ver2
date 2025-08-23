@@ -35,6 +35,12 @@ export default function HomePage() {
     initializeBooks();
   }, [initializeBooks]);
 
+  // デバッグ用：ブック数をログ出力
+  useEffect(() => {
+    console.log('Books count:', books.length);
+    console.log('Books:', books);
+  }, [books]);
+
   // フィルタリング・ソート
   const filteredAndSortedBooks = books
     .filter(book => 
@@ -84,6 +90,7 @@ export default function HomePage() {
 
   // ブックアクション
   const handleBookClick = (bookId: string) => {
+    console.log('Navigating to book:', bookId);
     router.push(`/book/${bookId}`);
   };
 

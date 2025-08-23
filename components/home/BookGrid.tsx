@@ -12,30 +12,16 @@ interface BookGridProps {
 }
 
 export default function BookGrid({ books, onBookClick, onBookAction, onNewBook }: BookGridProps) {
+  console.log('BookGrid rendering with books:', books.length);
+  
   return (
-    <div className="grid gap-6 p-6" style={{
-      gridTemplateColumns: 'repeat(auto-fit, minmax(312px, 1fr))',
-      '@media (min-width: 1536px)': {
-        gridTemplateColumns: 'repeat(5, 1fr)'
-      },
-      '@media (min-width: 1280px) and (max-width: 1535px)': {
-        gridTemplateColumns: 'repeat(4, 1fr)'
-      },
-      '@media (min-width: 1024px) and (max-width: 1279px)': {
-        gridTemplateColumns: 'repeat(3, 1fr)'
-      },
-      '@media (min-width: 768px) and (max-width: 1023px)': {
-        gridTemplateColumns: 'repeat(2, 1fr)'
-      },
-      '@media (max-width: 767px)': {
-        gridTemplateColumns: '1fr'
-      }
-    }}>
+    <div className="grid gap-6 p-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
       <NewBookCard onClick={onNewBook} />
       
       {books.map((book) => (
         <BookCard
           key={book.id}
+          data-testid="book-card"
           book={book}
           onClick={() => onBookClick(book.id)}
           onAction={(action) => onBookAction(book.id, action)}

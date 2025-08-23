@@ -37,6 +37,7 @@ export default function BookList({ books, onBookClick, onBookAction }: BookListP
           <div
             key={book.id}
             className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors group"
+            data-testid="book-list-item"
             onClick={() => onBookClick(book.id)}
           >
             {/* アイコン */}
