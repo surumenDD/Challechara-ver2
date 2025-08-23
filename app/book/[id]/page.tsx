@@ -8,6 +8,7 @@ import { useStore } from '@/lib/store';
 import Header from '@/components/Header';
 import Panels from '@/components/Panels';
 import SourceManager from '@/components/Left/SourceManager';
+import FileManager from '@/components/Left/FileManager';
 import SourceChat from '@/components/Left/SourceChat';
 import TitleBar from '@/components/Editor/TitleBar';
 import RichEditor from '@/components/Editor/RichEditor';
@@ -88,23 +89,23 @@ export default function EditorPage() {
       {/* タブ */}
       <div className="tab-list">
         <button 
-          className={`tab-button ${ui.leftTab === 'manage' ? 'active' : ''}`}
-          onClick={() => setLeftTab('manage')}
+          className={`tab-button ${ui.leftTab === 'files' ? 'active' : ''}`}
+          onClick={() => setLeftTab('files')}
         >
-          ソース管理
+          ファイル管理
         </button>
         <button 
           className={`tab-button ${ui.leftTab === 'chat' ? 'active' : ''}`}
           onClick={() => setLeftTab('chat')}
         >
-          ソースチャット
+          プロジェクトチャット
         </button>
       </div>
 
       {/* コンテンツ */}
       <div className="flex-1 overflow-hidden">
-        {ui.leftTab === 'manage' ? (
-          <SourceManager bookId={bookId} />
+        {ui.leftTab === 'files' ? (
+          <FileManager bookId={bookId} />
         ) : (
           <SourceChat bookId={bookId} />
         )}

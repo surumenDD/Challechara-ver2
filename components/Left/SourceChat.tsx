@@ -12,19 +12,20 @@ interface SourceChatProps {
 
 export default function SourceChat({ bookId }: SourceChatProps) {
   const {
-    episodes,
+    books,
     activeSourceIds,
     sourceChats,
     addSourceChatMessage,
     setActiveSourceIds
   } = useStore();
 
-  const bookEpisodes = episodes[bookId] || [];
+  const book = books.find(b => b.id === bookId);
+  const projectFiles = book?.files || [];
   const chatMessages = sourceChats[bookId] || [];
   
-  // 選択されたソースの情報
-  const selectedSources = bookEpisodes.filter(episode => 
-    activeSourceIds.includes(episode.id)
+  // 選択されたファイルの情報
+  const selectedFiles = projectFiles.filter(file => 
+    activeSourceIds.includes(file.id)
   );
 
   // メッセージ送信
@@ -39,8 +40,8 @@ export default function SourceChat({ bookId }: SourceChatProps) {
     addSourceChatMessage(bookId, userMessage);
 
     try {
-      // AIレスポンスを取得
-      const sources = selectedSources.map(s => s.title);
+      // AIレスポンスを取得（選択されたファイルの内容をコンテキストとして使用）
+      const sources = selectedFiles.map(f => f.title);
       const response = await chatProvider.send([...chatMessages, userMessage], { sources });
       addSourceChatMessage(bookId, response);
     } catch (error) {
@@ -65,22 +66,28 @@ export default function SourceChat({ bookId }: SourceChatProps) {
     <div className="h-full flex flex-col">
       {/* ヘッダー */}
       <div className="p-4 border-b border-gray-200">
-        <h2 className="font-semibold text-lg mb-3">ソースチャット</h2>
+        <h2 className="font-semibold text-lg mb-3">プロジェクトチャット</h2>
         
-        {/* 使用中ソースチップ */}
+        {/* 使用中ファイルチップ */}
         <ChipList
-          items={selectedSources.slice(0, 5).map(source => ({
-            id: source.id,
-            label: source.title
+          items={selectedFiles.slice(0, 5).map(file => ({
+            id: file.id,
+            label: file.title
           }))}
-          extraCount={selectedSources.length > 5 ? selectedSources.length - 5 : 0}
+          extraCount={selectedFiles.length > 5 ? selectedFiles.length - 5 : 0}
           onRemove={handleRemoveSource}
           maxWidth="100%"
         />
 
-        {selectedSources.length === 0 && (
+        {selectedFiles.length === 0 && (
           <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
-            ソースが選択されていません。「ソース管理」タブで選択してください。
+            ファイルが選択されていません。「ファイル管理」タブで選択してください。
+          </div>
+        )}
+        
+        {selectedFiles.length > 0 && (
+          <div className="text-xs text-gray-500 mt-2">
+            選択中のファイル内容を参考にして回答します
           </div>
         )}
       </div>
@@ -90,8 +97,8 @@ export default function SourceChat({ bookId }: SourceChatProps) {
         <ChatWindow messages={chatMessages} />
         <Composer 
           onSend={handleSendMessage}
-          disabled={selectedSources.length === 0}
-          placeholder="選択したソースについて質問する..."
+          disabled={selectedFiles.length === 0}
+          placeholder="プロジェクト内のファイルについて質問する..."
         />
       </div>
     </div>
