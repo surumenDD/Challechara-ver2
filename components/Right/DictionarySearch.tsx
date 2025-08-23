@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Button, Input } from '@openameba/spindle-ui';
+import { Button } from '@openameba/spindle-ui';
+import { Input } from '@/components/ui/input';
 import { Search, Book, Tag } from 'lucide-react';
 import ChatWindow from '../Chat/ChatWindow';
 import Composer from '../Chat/Composer';

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input } from '@openameba/spindle-ui';
+import { Button } from '@openameba/spindle-ui';
+import { Input } from '@/components/ui/input';
 import { X, BookOpen } from 'lucide-react';
 import { useStore, Book } from '@/lib/store';
 import { exportAsTxt } from '@/lib/file';

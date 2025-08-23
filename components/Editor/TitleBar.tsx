@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Input } from '@openameba/spindle-ui';
+import { Input } from '@/components/ui/input';
 import { useStore } from '@/lib/store';
 
 interface TitleBarProps {

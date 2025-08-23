@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Input } from '@openameba/spindle-ui';
+import { Button } from '@openameba/spindle-ui';
+import { Input } from '@/components/ui/input';
 import { Search, Grid, List, ArrowUpDown, Plus } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
