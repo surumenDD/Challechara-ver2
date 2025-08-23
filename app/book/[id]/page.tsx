@@ -15,6 +15,15 @@ import DictionarySearch from '@/components/Right/DictionarySearch';
 import MaterialUpload from '@/components/Right/MaterialUpload';
 import MaterialChat from '@/components/Right/MaterialChat';
 
+export async function generateStaticParams() {
+  // Generate static params for dummy books
+  const bookIds = Array.from({ length: 12 }, (_, i) => ({
+    id: `book-${i + 1}`
+  }));
+  
+  return bookIds;
+}
+
 export default function EditorPage() {
   const params = useParams();
   const bookId = params.id as string;
