@@ -52,7 +52,7 @@ test.describe('エディタ画面', () => {
       await expect(assistantMessage).toContainText('参照されたソース');
     } else {
       // ソースがない場合はテストをスキップ
-      test.skip('テスト用のソースデータがありません');
+      test.skip(true, "テスト用のソースデータがありません");
     }
   });
 
