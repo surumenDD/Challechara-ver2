@@ -41,7 +41,10 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
     try {
       // AIレスポンスを取得
       const sources = selectedMaterials.map(m => m.title);
-      const response = await chatProvider.send([...chatMessages, userMessage], { sources });
+      const response = await chatProvider.send([...chatMessages, userMessage], { 
+        sources, 
+        chatType: 'material' 
+      });
       addMaterialChatMessage(bookId, response);
     } catch (error) {
       console.error('資料チャット送信エラー:', error);

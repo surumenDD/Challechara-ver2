@@ -42,7 +42,10 @@ export default function SourceChat({ bookId }: SourceChatProps) {
     try {
       // AIレスポンスを取得（選択されたファイルの内容をコンテキストとして使用）
       const sources = selectedFiles.map(f => f.title);
-      const response = await chatProvider.send([...chatMessages, userMessage], { sources });
+      const response = await chatProvider.send([...chatMessages, userMessage], { 
+        sources, 
+        chatType: 'project' 
+      });
       addSourceChatMessage(bookId, response);
     } catch (error) {
       console.error('チャット送信エラー:', error);
