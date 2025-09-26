@@ -75,6 +75,7 @@ type AppStore = {
   updateEpisode: (bookId: string, episode: Episode) => void;
   deleteEpisode: (bookId: string, episodeId: string) => void;
   addMaterial: (bookId: string, material: Material) => void;
+  loadMaterialsFromBackend: (bookId: string) => Promise<void>;
   deleteMaterial: (bookId: string, materialId: string) => void;
 
   // Chat
@@ -471,6 +472,32 @@ export const useStore = create<AppStore>()(
           [bookId]: [...(state.materials[bookId] || []), material]
         }
       })),
+
+      loadMaterialsFromBackend: async (bookId: string) => {
+        try {
+          const response = await fetch(`http://localhost:8000/api/materials/${bookId}`, {
+            method: 'GET'
+          });
+
+          if (!response.ok) {
+            console.error('Failed to load materials from backend:', response.status);
+            return;
+          }
+
+          const materials = await response.json();
+          
+          set((state) => ({
+            materials: {
+              ...state.materials,
+              [bookId]: materials
+            }
+          }));
+
+          console.log(`Materials loaded for book ${bookId}:`, materials.length);
+        } catch (error) {
+          console.error('Error loading materials from backend:', error);
+        }
+      },
 
       deleteMaterial: (bookId, materialId) => set((state) => ({
         materials: {

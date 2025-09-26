@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, X } from 'lucide-react';
 import { useStore, Material } from '@/lib/store';
@@ -15,6 +15,7 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
   const {
     materials,
     addMaterial,
+    loadMaterialsFromBackend,
     deleteMaterial,
     activeMaterialIds,
     setActiveMaterialIds
@@ -28,20 +29,55 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
     activeMaterialIds.includes(material.id)
   );
 
+  // 初回読み込み
+  useEffect(() => {
+    if (bookMaterials.length === 0) {
+      loadMaterialsFromBackend(bookId);
+    }
+  }, [bookId, bookMaterials.length, loadMaterialsFromBackend]);
+
   // ファイルアップロード処理
   const handleFiles = useCallback(async (files: FileList) => {
     for (const file of Array.from(files)) {
       try {
-        const content = await extractText(file);
-        const material: Material = {
-          id: `material-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          title: file.name.replace(/\.[^/.]+$/, ''),
-          content,
-          createdAt: Date.now()
-        };
-        addMaterial(bookId, material);
+        // バックエンドAPIを使用してアップロード
+        const formData = new FormData();
+        formData.append('book_id', bookId);
+        formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
+        formData.append('file', file);
+
+        const response = await fetch('http://localhost:8000/api/materials/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.success) {
+          // フロントエンドの状態を更新
+          addMaterial(bookId, result.material);
+        } else {
+          throw new Error(result.message || 'アップロードに失敗しました');
+        }
       } catch (error) {
         console.error('資料アップロードエラー:', error);
+        // エラーの場合はフォールバック処理（既存のローカル処理）
+        try {
+          const content = await extractText(file);
+          const material: Material = {
+            id: `material-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            title: file.name.replace(/\.[^/.]+$/, ''),
+            content,
+            createdAt: Date.now()
+          };
+          addMaterial(bookId, material);
+        } catch (fallbackError) {
+          console.error('フォールバック処理も失敗:', fallbackError);
+        }
       }
     }
   }, [bookId, addMaterial]);
@@ -99,12 +135,36 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
   }, [activeMaterialIds, setActiveMaterialIds]);
 
   // 資料削除
-  const handleDeleteMaterial = useCallback((materialId: string) => {
+  const handleDeleteMaterial = useCallback(async (materialId: string) => {
     if (confirm('この資料を削除しますか？')) {
-      deleteMaterial(bookId, materialId);
-      // 選択からも削除
-      const newSelection = activeMaterialIds.filter(id => id !== materialId);
-      setActiveMaterialIds(newSelection);
+      try {
+        // バックエンドAPIを使用して削除
+        const response = await fetch(`http://localhost:8000/api/materials/${bookId}/${materialId}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Delete failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        if (result.success) {
+          // フロントエンドの状態を更新
+          deleteMaterial(bookId, materialId);
+          // 選択からも削除
+          const newSelection = activeMaterialIds.filter(id => id !== materialId);
+          setActiveMaterialIds(newSelection);
+        } else {
+          throw new Error(result.message || '削除に失敗しました');
+        }
+      } catch (error) {
+        console.error('資料削除エラー:', error);
+        // エラーの場合はフォールバック処理（既存のローカル処理）
+        deleteMaterial(bookId, materialId);
+        const newSelection = activeMaterialIds.filter(id => id !== materialId);
+        setActiveMaterialIds(newSelection);
+      }
     }
   }, [deleteMaterial, bookId, activeMaterialIds, setActiveMaterialIds]);
 
