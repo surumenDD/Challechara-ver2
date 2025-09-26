@@ -1,15 +1,60 @@
-// ダミーテキスト抽出
+// テキストファイルの内容を抽出してHTML形式に変換
 export async function extractText(file: File): Promise<string> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      // ファイル名 + 先頭数百文字のダミー
-      const preview = result ? result.substring(0, 300) : '';
-      resolve(`ファイル名: ${file.name}\n\n${preview}${result && result.length > 300 ? '...' : ''}\n\n（実際のファイルからのテキスト抽出はダミー実装です）`);
+      if (result) {
+        // プレーンテキストをHTML形式に変換
+        const htmlContent = convertPlainTextToHTML(result);
+        resolve(htmlContent);
+      } else {
+        resolve('');
+      }
     };
-    reader.readAsText(file);
+    reader.onerror = (error) => {
+      console.error('File reading error:', error);
+      reject(error);
+    };
+    reader.readAsText(file, 'utf-8');
   });
+}
+
+// プレーンテキストをHTML形式に変換する関数
+function convertPlainTextToHTML(text: string): string {
+  // 空文字列の場合はそのまま返す
+  if (!text.trim()) {
+    return '<p></p>';
+  }
+  
+  // 改行を正規化（Windows、Mac、Linuxの改行に対応）
+  const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  
+  // 空行で分割してパラグラフを作成
+  const paragraphs = normalizedText.split('\n\n');
+  
+  const htmlParagraphs = paragraphs.map(paragraph => {
+    // 各パラグラフ内の改行は<br>に変換
+    const trimmedParagraph = paragraph.trim();
+    if (!trimmedParagraph) {
+      return '<p></p>';
+    }
+    
+    // HTMLエスケープ
+    const escapedParagraph = trimmedParagraph
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
+    
+    // 単一改行を<br>に変換
+    const withBreaks = escapedParagraph.replace(/\n/g, '<br>');
+    
+    return `<p>${withBreaks}</p>`;
+  });
+  
+  return htmlParagraphs.join('');
 }
 
 // TXTエクスポート（LF改行、UTF-8）
