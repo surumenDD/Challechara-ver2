@@ -48,11 +48,11 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
-    
+
     try {
       // バックエンドAPIを使用して辞書検索
       const response = await fetch(`http://localhost:8000/api/dictionary/search?query=${encodeURIComponent(searchQuery)}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setSearchResults(data.results);
@@ -61,13 +61,13 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
       }
     } catch (error) {
       console.error('辞書検索エラー:', error);
-      
+
       // エラー時のフォールバック（既存のダミー検索）
-      const filtered = dummyDictionaryResults.filter(item => 
-        item.word.includes(searchQuery) || 
+      const filtered = dummyDictionaryResults.filter(item =>
+        item.word.includes(searchQuery) ||
         item.reading.includes(searchQuery)
       );
-      
+
       if (filtered.length === 0) {
         // 検索結果なしの場合、ダミーデータを生成
         setSearchResults([
@@ -166,16 +166,16 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
                     {result.partOfSpeech}
                   </span>
                 </div>
-                
+
                 <div className="space-y-2 text-sm">
                   <div>
                     <strong>意味:</strong> {result.meanings.join('、')}
                   </div>
-                  
+
                   <div>
                     <strong>例文:</strong> {result.examples.join('、')}
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     <Tag className="w-3 h-3 text-gray-500" />
                     <span className="text-gray-600">類語:</span>
@@ -194,9 +194,9 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
           <h3 className="font-medium text-sm text-gray-700">補助チャット</h3>
           <p className="text-xs text-gray-500 mt-1">表現や言い回しについて質問できます</p>
         </div>
-        
+
         <ChatWindow messages={chatMessages} />
-        <Composer 
+        <Composer
           onSend={handleSendMessage}
           placeholder="表現について質問する..."
         />
