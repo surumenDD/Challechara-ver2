@@ -49,8 +49,20 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
 
     setIsSearching(true);
     
-    // ダミー検索（実際はAPIコール）
-    setTimeout(() => {
+    try {
+      // バックエンドAPIを使用して辞書検索
+      const response = await fetch(`http://localhost:8000/api/dictionary/search?query=${encodeURIComponent(searchQuery)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults(data.results);
+      } else {
+        throw new Error('Dictionary search failed');
+      }
+    } catch (error) {
+      console.error('辞書検索エラー:', error);
+      
+      // エラー時のフォールバック（既存のダミー検索）
       const filtered = dummyDictionaryResults.filter(item => 
         item.word.includes(searchQuery) || 
         item.reading.includes(searchQuery)
@@ -72,9 +84,9 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
       } else {
         setSearchResults(filtered);
       }
-      
+    } finally {
       setIsSearching(false);
-    }, 800);
+    }
   }, [searchQuery]);
 
   // エンターキーで検索
@@ -95,7 +107,9 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
     addDictChatMessage(bookId, userMessage);
 
     try {
-      const response = await chatProvider.send([...chatMessages, userMessage]);
+      const response = await chatProvider.send([...chatMessages, userMessage], {
+        chatType: 'dictionary'
+      });
       addDictChatMessage(bookId, response);
     } catch (error) {
       console.error('辞書チャット送信エラー:', error);
