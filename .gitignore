@@ -55,3 +55,7 @@ Thumbs.db
 # Backup files
 *.backup
 *.bak
+
+# logs
+*.log
+frontend.log
