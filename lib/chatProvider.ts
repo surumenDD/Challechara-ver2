@@ -7,17 +7,17 @@ export interface ChatProvider {
 export class MockProvider implements ChatProvider {
   async send(messages: ChatMessage[], opts?: { sources?: string[], chatType?: string }): Promise<ChatMessage> {
     const { sources = [], chatType = 'general' } = opts || {};
-    
+
     // 1秒待機でリアル感を演出
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     const lastMessage = messages[messages.length - 1];
     let mockResponse = '';
-    
+
     if (sources.length > 0) {
       mockResponse = `参照されたソース（${sources.slice(0, 3).join('、')}${sources.length > 3 ? `他${sources.length - 3}件` : ''}）に基づいて回答します。\n\n`;
     }
-    
+
     // 簡単なパターンマッチング
     const content = lastMessage.content.toLowerCase();
     if (content.includes('検索') || content.includes('探し')) {
@@ -29,7 +29,7 @@ export class MockProvider implements ChatProvider {
     } else {
       mockResponse += 'ご質問ありがとうございます。AIアシスタントとして、最適な回答をご提供するよう努めます。';
     }
-    
+
     return {
       id: crypto.randomUUID?.() || String(Date.now()),
       role: 'assistant',
@@ -41,21 +41,21 @@ export class MockProvider implements ChatProvider {
 
 export class APIProvider implements ChatProvider {
   private baseURL: string;
-  
+
   constructor(baseURL: string = 'http://localhost:8000/api') {
     this.baseURL = baseURL;
   }
-  
+
   async send(messages: ChatMessage[], opts: { sources?: string[], chatType?: string } = {}): Promise<ChatMessage> {
     const { sources = [], chatType = 'project' } = opts;
-    
+
     // チャット種別に応じてエンドポイントを決定
     const endpoint = {
       'project': '/chat/project',
-      'dictionary': '/chat/dictionary', 
+      'dictionary': '/chat/dictionary',
       'material': '/chat/material'
     }[chatType] || '/chat/project';
-    
+
     try {
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         method: 'POST',
@@ -67,14 +67,14 @@ export class APIProvider implements ChatProvider {
           sources
         })
       });
-      
+
       if (!response.ok) {
         throw new Error(`API Error: ${response.status}`);
       }
-      
+
       const data = await response.json();
       return data.message;
-      
+
     } catch (error) {
       console.error('API Provider error:', error);
       // エラー時はMockProviderにフォールバック
@@ -86,14 +86,14 @@ export class APIProvider implements ChatProvider {
 
 export class OpenAIProvider implements ChatProvider {
   private apiKey: string;
-  
+
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
-  
+
   async send(messages: ChatMessage[], opts?: { sources?: string[], chatType?: string }): Promise<ChatMessage> {
     const { sources = [], chatType = 'general' } = opts || {};
-    
+
     // 実装は空でも可とのことなので、とりあえずMockProviderと同じ動作
     const mockProvider = new MockProvider();
     const response = await mockProvider.send(messages, { sources, chatType });
@@ -107,9 +107,9 @@ export class OpenAIProvider implements ChatProvider {
 // プロバイダーファクトリー
 export function createChatProvider(): ChatProvider {
   // 本番環境かどうかを判定（環境変数またはホスト名で判定）
-  const isProduction = typeof window !== 'undefined' && 
+  const isProduction = typeof window !== 'undefined' &&
     (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1');
-  
+
   // API使用環境の場合はAPIProvider、テスト環境ではMockProvider
   if (!isProduction || typeof window !== 'undefined') {
     return new APIProvider();

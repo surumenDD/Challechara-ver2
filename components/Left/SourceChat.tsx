@@ -22,9 +22,9 @@ export default function SourceChat({ bookId }: SourceChatProps) {
   const book = books.find(b => b.id === bookId);
   const projectFiles = book?.files || [];
   const chatMessages = sourceChats[bookId] || [];
-  
+
   // 選択されたファイルの情報
-  const selectedFiles = projectFiles.filter(file => 
+  const selectedFiles = projectFiles.filter(file =>
     activeSourceIds.includes(file.id)
   );
 
@@ -41,10 +41,10 @@ export default function SourceChat({ bookId }: SourceChatProps) {
 
     try {
       // AIレスポンスを取得（選択されたファイルの内容をコンテキストとして使用）
-      const sources = selectedFiles.map(f => f.title);
-      const response = await chatProvider.send([...chatMessages, userMessage], { 
-        sources, 
-        chatType: 'project' 
+      const sources = [`project:${bookId}:${selectedFiles.map(f => f.title).join(',')}`];
+      const response = await chatProvider.send([...chatMessages, userMessage], {
+        sources,
+        chatType: 'project'
       });
       addSourceChatMessage(bookId, response);
     } catch (error) {
@@ -70,7 +70,7 @@ export default function SourceChat({ bookId }: SourceChatProps) {
       {/* ヘッダー */}
       <div className="p-4 border-b border-gray-200">
         <h2 className="font-semibold text-lg mb-3">プロジェクトチャット</h2>
-        
+
         {/* 使用中ファイルチップ */}
         <ChipList
           items={selectedFiles.slice(0, 5).map(file => ({
@@ -87,7 +87,7 @@ export default function SourceChat({ bookId }: SourceChatProps) {
             ファイルが選択されていません。「ファイル管理」タブで選択してください。
           </div>
         )}
-        
+
         {selectedFiles.length > 0 && (
           <div className="text-xs text-gray-500 mt-2">
             選択中のファイル内容を参考にして回答します
@@ -98,7 +98,7 @@ export default function SourceChat({ bookId }: SourceChatProps) {
       {/* チャットエリア */}
       <div className="flex-1 flex flex-col min-h-0">
         <ChatWindow messages={chatMessages} />
-        <Composer 
+        <Composer
           onSend={handleSendMessage}
           disabled={selectedFiles.length === 0}
           placeholder="プロジェクト内のファイルについて質問する..."

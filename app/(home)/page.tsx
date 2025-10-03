@@ -21,6 +21,7 @@ export default function HomePage() {
     sortOrder,
     query,
     addBook,
+    createBook,
     updateBook,
     deleteBook,
     duplicateBook,
@@ -43,8 +44,8 @@ export default function HomePage() {
 
   // フィルタリング・ソート
   const filteredAndSortedBooks = books
-    .filter(book => 
-      !book.archived && 
+    .filter(book =>
+      !book.archived &&
       book.title.toLowerCase().includes(query.toLowerCase())
     )
     .sort((a, b) => {
@@ -67,35 +68,22 @@ export default function HomePage() {
     setShowNewBookDialog(true);
   };
 
-  const handleCreateBook = () => {
+  const handleCreateBook = async () => {
     if (!newBookTitle.trim()) return;
 
-    const defaultFile = {
-      id: `file-${Date.now()}`,
-      title: `${newBookTitle.trim()}.txt`,
-      content: `# ${newBookTitle.trim()}\n\nここに本文を入力してください...`,
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
+    try {
+      // バックエンドAPIを使用してブックを作成
+      const newBook = await createBook(newBookTitle.trim(), '📖');
 
-    const newBook: Book = {
-      id: `book-${Date.now()}`,
-      title: newBookTitle.trim(),
-      coverEmoji: '📖',
-      updatedAt: Date.now(),
-      sourceCount: 0,
-      archived: false,
-      content: '<p>ここに本文を入力してください...</p>',
-      files: [defaultFile],
-      activeFileId: defaultFile.id
-    };
+      setShowNewBookDialog(false);
+      setNewBookTitle('');
 
-    addBook(newBook);
-    setShowNewBookDialog(false);
-    setNewBookTitle('');
-    
-    // 作成したブックを開く
-    router.push(`/book/${newBook.id}`);
+      // 作成したブックを開く
+      router.push(`/book/${newBook.id}`);
+    } catch (error) {
+      console.error('Error creating book:', error);
+      alert('ブックの作成中にエラーが発生しました。もう一度お試しください。');
+    }
   };
 
   // ブックアクション
@@ -112,22 +100,22 @@ export default function HomePage() {
       case 'open':
         router.push(`/book/${bookId}`);
         break;
-        
+
       case 'rename':
         const newTitle = prompt('新しいタイトルを入力してください:', book.title);
         if (newTitle && newTitle.trim() !== book.title) {
           updateBook({ ...book, title: newTitle.trim(), updatedAt: Date.now() });
         }
         break;
-        
+
       case 'duplicate':
         duplicateBook(bookId);
         break;
-        
+
       case 'export':
         exportAsTxt(book.title, book.content || '');
         break;
-        
+
       case 'delete':
         if (confirm(`「${book.title}」を削除しますか？この操作は取り消せません。`)) {
           deleteBook(bookId);
@@ -154,7 +142,7 @@ export default function HomePage() {
     <div className="h-screen flex flex-col bg-gray-50">
       <Header />
       <Toolbar onNewBook={handleNewBook} />
-      
+
       <main className="flex-1 overflow-y-auto">
         {filteredAndSortedBooks.length === 0 ? (
           <EmptyState

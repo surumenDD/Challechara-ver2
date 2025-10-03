@@ -21,9 +21,9 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
 
   const bookMaterials = materials[bookId] || [];
   const chatMessages = materialChats[bookId] || [];
-  
+
   // 選択された資料の情報
-  const selectedMaterials = bookMaterials.filter(material => 
+  const selectedMaterials = bookMaterials.filter(material =>
     activeMaterialIds.includes(material.id)
   );
 
@@ -40,10 +40,10 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
 
     try {
       // AIレスポンスを取得
-      const sources = selectedMaterials.map(m => m.title);
-      const response = await chatProvider.send([...chatMessages, userMessage], { 
-        sources, 
-        chatType: 'material' 
+      const sources = [`material:${bookId}:${selectedMaterials.map(m => m.title).join(',')}`];
+      const response = await chatProvider.send([...chatMessages, userMessage], {
+        sources,
+        chatType: 'material'
       });
       addMaterialChatMessage(bookId, response);
     } catch (error) {
@@ -69,7 +69,7 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
       {/* ヘッダー */}
       <div className="p-4 border-b border-gray-200">
         <h3 className="font-medium text-sm text-gray-700 mb-3">資料チャット</h3>
-        
+
         {/* 使用中資料チップ */}
         <ChipList
           items={selectedMaterials.slice(0, 5).map(material => ({
@@ -91,7 +91,7 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
       {/* チャットエリア */}
       <div className="flex-1 flex flex-col min-h-0">
         <ChatWindow messages={chatMessages} />
-        <Composer 
+        <Composer
           onSend={handleSendMessage}
           disabled={selectedMaterials.length === 0}
           placeholder="選択した資料について質問する..."
