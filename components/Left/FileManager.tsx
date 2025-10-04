@@ -3,17 +3,17 @@
 import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Search, Plus, FileText, MoreVertical } from 'lucide-react';
-import { useStore, ProjectFile } from '@/lib/store';
+import { Upload, Search, Plus, FileText, Download } from 'lucide-react';
+import { useStore, ProjectFile, Book } from '@/lib/store';
 import { extractText } from '@/lib/file';
 
 interface FileManagerProps {
   bookId: string;
+  book: Book;
 }
 
-export default function FileManager({ bookId }: FileManagerProps) {
+export default function FileManager({ bookId, book }: FileManagerProps) {
   const {
-    books,
     addProjectFile,
     updateProjectFile,
     deleteProjectFile,
@@ -30,9 +30,8 @@ export default function FileManager({ bookId }: FileManagerProps) {
   const [newFileName, setNewFileName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const book = books.find(b => b.id === bookId);
-  const files = book?.files || [];
-  const activeFileId = book?.activeFileId;
+  const files = book.files ?? [];
+  const activeFileId = book.activeFileId;
 
   // ファイルアップロード処理
   const handleFiles = useCallback(async (uploadFiles: FileList) => {
@@ -151,6 +150,29 @@ export default function FileManager({ bookId }: FileManagerProps) {
       setLeftTab('chat');
     }
   }, [activeSourceIds, setLeftTab]);
+  
+  const handleDownload = useCallback(() => {
+    const filesToDownload = (book.files ?? []).filter(file =>
+      activeSourceIds.includes(file.id)
+    );
+
+    if (filesToDownload.length === 0) {
+      return;
+    }
+
+    filesToDownload.forEach((file) => {
+      const filename = file.title.endsWith('.txt') ? file.title : `${file.title}.txt`;
+      const blob = new Blob([file.content ?? ''], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
+  }, [book, activeSourceIds]);
 
   return (
     <div className="h-full flex flex-col">
@@ -290,6 +312,15 @@ export default function FileManager({ bookId }: FileManagerProps) {
           <span className="text-sm text-gray-600">
             {activeSourceIds.length}件選択中
           </span>
+          <Button
+            variant="default"
+            onClick={handleDownload}
+            disabled={activeSourceIds.length === 0}
+            className="flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            ダウンロード
+          </Button>
           <Button
             variant="default"
             onClick={handleStartChat}

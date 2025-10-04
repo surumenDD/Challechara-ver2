@@ -105,7 +105,7 @@ export default function EditorPage() {
       {/* コンテンツ */}
       <div className="flex-1 overflow-hidden">
         {ui.leftTab === 'files' ? (
-          <FileManager bookId={bookId} />
+          <FileManager bookId={bookId} book={book} />
         ) : (
           <SourceChat bookId={bookId} />
         )}
