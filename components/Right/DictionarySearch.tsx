@@ -41,62 +41,35 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
   const [searchResults, setSearchResults] = useState<typeof dummyDictionaryResults>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // 検索条件の状態
+  const [searchOptions, setSearchOptions] = useState({
+    meanings: true,
+    examples: true,
+    synonyms: true
+  });
+
   const chatMessages = dictChats[bookId] || [];
 
-  // 辞書検索
-  const handleSearch = useCallback(async () => {
+  // Google検索を新しいタブで開く
+  const handleSearch = useCallback(() => {
     if (!searchQuery.trim()) return;
 
-    setIsSearching(true);
+    // チェックされている条件を配列にまとめる
+    const selectedOptions = Object.entries(searchOptions)
+      .filter(([_, value]) => value)
+      .map(([key]) => key === 'meanings' ? '意味' : key === 'examples' ? '例文' : '類語');
 
-    try {
-      // バックエンドAPIを使用して辞書検索
-      const response = await fetch(`http://localhost:8000/api/dictionary/search?query=${encodeURIComponent(searchQuery)}`);
+    // 検索クエリを結合
+    const finalQuery = [searchQuery, ...selectedOptions].join(' ');
 
-      if (response.ok) {
-        const data = await response.json();
-        setSearchResults(data.results);
-      } else {
-        throw new Error('Dictionary search failed');
-      }
-    } catch (error) {
-      console.error('辞書検索エラー:', error);
+    const url = `https://www.google.com/search?q=${encodeURIComponent(finalQuery)}`;
+    window.open(url, '_blank');
+  }, [searchQuery, searchOptions]);
 
-      // エラー時のフォールバック（既存のダミー検索）
-      const filtered = dummyDictionaryResults.filter(item =>
-        item.word.includes(searchQuery) ||
-        item.reading.includes(searchQuery)
-      );
-
-      if (filtered.length === 0) {
-        // 検索結果なしの場合、ダミーデータを生成
-        setSearchResults([
-          {
-            id: Date.now().toString(),
-            word: searchQuery,
-            reading: 'よみかた',
-            partOfSpeech: '調査中',
-            meanings: [`「${searchQuery}」に関する情報を調査中です`],
-            examples: ['例文準備中'],
-            synonyms: ['類語調査中']
-          }
-        ]);
-      } else {
-        setSearchResults(filtered);
-      }
-    } finally {
-      setIsSearching(false);
-    }
-  }, [searchQuery]);
-
-  // エンターキーで検索
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
+    if (e.key === 'Enter') handleSearch();
   }, [handleSearch]);
 
-  // チャットメッセージ送信
   const handleSendMessage = useCallback(async (content: string) => {
     const userMessage = {
       id: `msg-${Date.now()}`,
@@ -125,9 +98,30 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
 
   return (
     <div className="h-full flex flex-col">
-      {/* 検索エリア */}
+      {/* 検索条件 */}
       <div className="p-4 border-b border-gray-200 space-y-4">
-        <div className="flex gap-2">
+        <div className="flex gap-4">
+          {['meanings', 'examples', 'synonyms'].map((key) => (
+            <label key={key} className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={searchOptions[key as keyof typeof searchOptions]}
+                onChange={() =>
+                  setSearchOptions((prev) => ({
+                    ...prev,
+                    [key]: !prev[key as keyof typeof searchOptions]
+                  }))
+                }
+              />
+              <span className="capitalize text-sm">
+                {key === 'meanings' ? '意味' : key === 'examples' ? '例文' : '類語'}
+              </span>
+            </label>
+          ))}
+        </div>
+
+        {/* 検索ボックス */}
+        <div className="flex gap-2 mt-2">
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -146,7 +140,7 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
           </Button>
         </div>
 
-        {/* 検索結果 */}
+        {/* 検索結果（ダミー表示） */}
         {isSearching && (
           <div className="text-center py-4">
             <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -165,22 +159,6 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
                   <span className="text-xs bg-gray-100 px-2 py-1 rounded">
                     {result.partOfSpeech}
                   </span>
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <strong>意味:</strong> {result.meanings.join('、')}
-                  </div>
-
-                  <div>
-                    <strong>例文:</strong> {result.examples.join('、')}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Tag className="w-3 h-3 text-gray-500" />
-                    <span className="text-gray-600">類語:</span>
-                    <span>{result.synonyms.join('、')}</span>
-                  </div>
                 </div>
               </div>
             ))}
