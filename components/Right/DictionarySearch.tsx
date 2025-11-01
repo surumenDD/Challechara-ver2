@@ -51,14 +51,24 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
 
     try {
       // バックエンドAPIを使用して辞書検索
-      const response = await fetch(`http://localhost:8000/api/dictionary/search?query=${encodeURIComponent(searchQuery)}`);
+        const res = await fetch(`https://jlpt-vocab-api.vercel.app/api/words?word=${encodeURIComponent(searchQuery)}`);
+        if (!res.ok) throw new Error('JLPT Vocab API request failed');
 
-      if (response.ok) {
-        const data = await response.json();
-        setSearchResults(data.results);
-      } else {
-        throw new Error('Dictionary search failed');
-      }
+        const data = await res.json();
+
+        // words 配列を searchResults 用のフォーマットに変換
+        const results = data.words.map((w: any) => ({
+          id: w.word,
+          word: w.word,
+          reading: w.furigana || '',
+          partOfSpeech: '不明', // APIには品詞情報がないので仮で
+          meanings: w.meaning ? [w.meaning] : ['意味不明'],
+          examples: ['例文なし'], // APIには例文がないので仮で
+          synonyms: ['類語なし']  // 同様に仮
+        }));
+    
+        setSearchResults(results);
+
     } catch (error) {
       console.error('辞書検索エラー:', error);
 
