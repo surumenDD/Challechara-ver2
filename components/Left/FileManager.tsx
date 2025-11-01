@@ -161,8 +161,23 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
     }
 
     filesToDownload.forEach((file) => {
+      let html = file.content ?? '';
+
+      // <br> を改行に置換
+      html = html.replace(/<br\s*\/?>/gi, '\n');
+
+      // <p> と </p> を改行に置換（開始タグは無視、終了タグで改行）
+      html = html.replace(/<p[^>]*>/gi, ''); // <p>を削除
+      html = html.replace(/<\/p>/gi, '\n');  // </p>を改行に
+
+      // その他のタグを削除
+      html = html.replace(/<[^>]+>/g, '');
+
+      // 連続する改行をそのまま保持する
+      const text = html;
+
       const filename = file.title.endsWith('.txt') ? file.title : `${file.title}.txt`;
-      const blob = new Blob([file.content ?? ''], { type: 'text/plain;charset=utf-8' });
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
