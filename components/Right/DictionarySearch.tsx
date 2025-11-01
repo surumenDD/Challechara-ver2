@@ -42,61 +42,12 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
   const [isSearching, setIsSearching] = useState(false);
 
   const chatMessages = dictChats[bookId] || [];
-
-  // 辞書検索
-  const handleSearch = useCallback(async () => {
+  const handleSearch = useCallback(() => {
     if (!searchQuery.trim()) return;
 
-    setIsSearching(true);
-
-    try {
-      // バックエンドAPIを使用して辞書検索
-        const res = await fetch(`https://jlpt-vocab-api.vercel.app/api/words?word=${encodeURIComponent(searchQuery)}`);
-        if (!res.ok) throw new Error('JLPT Vocab API request failed');
-
-        const data = await res.json();
-
-        // words 配列を searchResults 用のフォーマットに変換
-        const results = data.words.map((w: any) => ({
-          id: w.word,
-          word: w.word,
-          reading: w.furigana || '',
-          partOfSpeech: '不明', // APIには品詞情報がないので仮で
-          meanings: w.meaning ? [w.meaning] : ['意味不明'],
-          examples: ['例文なし'], // APIには例文がないので仮で
-          synonyms: ['類語なし']  // 同様に仮
-        }));
-    
-        setSearchResults(results);
-
-    } catch (error) {
-      console.error('辞書検索エラー:', error);
-
-      // エラー時のフォールバック（既存のダミー検索）
-      const filtered = dummyDictionaryResults.filter(item =>
-        item.word.includes(searchQuery) ||
-        item.reading.includes(searchQuery)
-      );
-
-      if (filtered.length === 0) {
-        // 検索結果なしの場合、ダミーデータを生成
-        setSearchResults([
-          {
-            id: Date.now().toString(),
-            word: searchQuery,
-            reading: 'よみかた',
-            partOfSpeech: '調査中',
-            meanings: [`「${searchQuery}」に関する情報を調査中です`],
-            examples: ['例文準備中'],
-            synonyms: ['類語調査中']
-          }
-        ]);
-      } else {
-        setSearchResults(filtered);
-      }
-    } finally {
-      setIsSearching(false);
-    }
+    // 新しいタブでGoogle検索を開く
+    const url = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+    window.open(url, '_blank'); // '_blank' で新しいタブ
   }, [searchQuery]);
 
   // エンターキーで検索
