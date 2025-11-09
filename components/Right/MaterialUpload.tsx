@@ -15,6 +15,7 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
   const {
     materials,
     addMaterial,
+    addMaterialFromFile,
     loadMaterialsFromBackend,
     deleteMaterial,
     activeMaterialIds,
@@ -25,7 +26,7 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const bookMaterials = materials[bookId] || [];
-  const selectedMaterials = bookMaterials.filter(material => 
+  const selectedMaterials = bookMaterials.filter(material =>
     activeMaterialIds.includes(material.id)
   );
 
@@ -40,28 +41,38 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
   const handleFiles = useCallback(async (files: FileList) => {
     for (const file of Array.from(files)) {
       try {
-        // バックエンドAPIを使用してアップロード
-        const formData = new FormData();
-        formData.append('book_id', bookId);
-        formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
-        formData.append('file', file);
-
-        const response = await fetch('http://localhost:8000/api/materials/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Upload failed: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        
-        if (result.success) {
-          // フロントエンドの状態を更新
-          addMaterial(bookId, result.material);
+        // .txtファイルの場合は新しいHookを使用
+        if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+          await addMaterialFromFile(bookId, file);
         } else {
-          throw new Error(result.message || 'アップロードに失敗しました');
+          // その他のファイルタイプは既存の処理を使用
+          const formData = new FormData();
+          formData.append('book_id', bookId);
+          formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
+          formData.append('file', file);
+
+          // bookIdから数値部分を抽出
+          const numericBookId = bookId.startsWith('book-')
+            ? bookId.replace('book-', '')
+            : bookId;
+
+          const response = await fetch(`http://localhost:8080/api/books/${numericBookId}/materials`, {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Upload failed: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+
+          if (result.success) {
+            // フロントエンドの状態を更新
+            addMaterial(bookId, result.material);
+          } else {
+            throw new Error(result.message || 'アップロードに失敗しました');
+          }
         }
       } catch (error) {
         console.error('資料アップロードエラー:', error);
@@ -80,7 +91,7 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
         }
       }
     }
-  }, [bookId, addMaterial]);
+  }, [bookId, addMaterial, addMaterialFromFile]);
 
   // ドラッグ&ドロップ
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -138,8 +149,16 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
   const handleDeleteMaterial = useCallback(async (materialId: string) => {
     if (confirm('この資料を削除しますか？')) {
       try {
-        // バックエンドAPIを使用して削除
-        const response = await fetch(`http://localhost:8000/api/materials/${bookId}/${materialId}`, {
+        // Material IDを文字列に変換
+        const materialIdStr = String(materialId);
+
+        // Material IDから数値IDを抽出（material-xxx形式の場合）
+        const numericMaterialId = materialIdStr.startsWith('material-')
+          ? materialIdStr.replace('material-', '').split('-')[0]
+          : materialIdStr;
+
+        // バックエンドAPIを使用して削除（正しいエンドポイント: /api/materials/{id}）
+        const response = await fetch(`http://localhost:8080/api/materials/${numericMaterialId}`, {
           method: 'DELETE',
         });
 
@@ -147,17 +166,11 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
           throw new Error(`Delete failed: ${response.statusText}`);
         }
 
-        const result = await response.json();
-        
-        if (result.success) {
-          // フロントエンドの状態を更新
-          deleteMaterial(bookId, materialId);
-          // 選択からも削除
-          const newSelection = activeMaterialIds.filter(id => id !== materialId);
-          setActiveMaterialIds(newSelection);
-        } else {
-          throw new Error(result.message || '削除に失敗しました');
-        }
+        // フロントエンドの状態を更新
+        deleteMaterial(bookId, materialId);
+        // 選択からも削除
+        const newSelection = activeMaterialIds.filter(id => id !== materialId);
+        setActiveMaterialIds(newSelection);
       } catch (error) {
         console.error('資料削除エラー:', error);
         // エラーの場合はフォールバック処理（既存のローカル処理）
@@ -191,7 +204,7 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
             </p>
           </div>
         </div>
-        
+
         <input
           ref={fileInputRef}
           type="file"
@@ -254,13 +267,12 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
         ) : (
           <div className="p-2">
             {bookMaterials.map((material) => (
-              <div 
+              <div
                 key={material.id}
-                className={`p-3 mb-2 rounded-lg border transition-colors cursor-pointer ${
-                  activeMaterialIds.includes(material.id)
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 mb-2 rounded-lg border transition-colors cursor-pointer ${activeMaterialIds.includes(material.id)
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
                 onClick={() => handleToggleSelect(material.id)}
               >
                 <div className="flex items-start gap-3">
@@ -272,7 +284,7 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
                     className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     onClick={(e) => e.stopPropagation()}
                   />
-                  
+
                   {/* コンテンツ */}
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-sm text-gray-900 truncate mb-1">

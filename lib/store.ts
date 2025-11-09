@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { addMaterialFromFile as addMaterialFromFileAPI } from '@/hooks/add-materials';
 
 export type ProjectFile = {
   id: string;
@@ -75,6 +76,7 @@ type AppStore = {
   updateEpisode: (bookId: string, episode: Episode) => void;
   deleteEpisode: (bookId: string, episodeId: string) => void;
   addMaterial: (bookId: string, material: Material) => void;
+  addMaterialFromFile: (bookId: string, file: File) => Promise<void>;
   loadMaterialsFromBackend: (bookId: string) => Promise<void>;
   deleteMaterial: (bookId: string, materialId: string) => void;
 
@@ -98,9 +100,9 @@ type AppStore = {
   createBook: (title: string, coverEmoji?: string) => Promise<Book>;
   loadBooksFromBackend: () => Promise<void>;
   refreshBookFromBackend: (bookId: string) => Promise<void>;
-  saveProjectFile: (projectId: string, filename: string, content: string) => Promise<any>;
+  saveProjectFile: (projectId: string, fileId: string, filename: string, content: string) => Promise<any>;
   updateBook: (book: Book) => void;
-  deleteBook: (bookId: string) => void;
+  deleteBook: (bookId: string) => Promise<void>;
   duplicateBook: (bookId: string) => void;
   initializeBooks: () => void;
 
@@ -257,7 +259,7 @@ export const useStore = create<AppStore>()(
         console.log('=== UPDATE PROJECT FILE ===');
         console.log('Book ID:', bookId);
         console.log('File:', file);
-        
+
         // まずローカル状態を更新
         set((state) => ({
           books: state.books.map(book =>
@@ -274,7 +276,7 @@ export const useStore = create<AppStore>()(
         // バックエンドAPIにも保存
         try {
           const state = get();
-          await state.saveProjectFile(bookId, file.title, file.content);
+          await state.saveProjectFile(bookId, file.id, file.title, file.content);
           console.log('✅ File saved to backend successfully');
         } catch (error) {
           console.error('❌ Failed to save file to backend:', error);
@@ -287,50 +289,71 @@ export const useStore = create<AppStore>()(
         console.log('File ID:', fileId);
         console.log('Old title:', oldTitle);
         console.log('New title:', newTitle);
-        
+
         // バリデーション
         if (!bookId || !fileId || !oldTitle || !newTitle) {
           console.error('Missing required parameters for rename');
           throw new Error('Missing required parameters for file rename');
         }
-        
+
         if (oldTitle === newTitle) {
           console.log('Old and new titles are the same, skipping rename');
           return;
         }
-        
+
         console.log('Starting backend API call first...');
 
-        // バックエンドでファイル名変更
+        // バックエンドでファイル名変更（エピソードAPIを使用）
         try {
-          const url = `http://localhost:8000/api/projects/${bookId}/files/${encodeURIComponent(oldTitle)}/rename/${encodeURIComponent(newTitle)}`;
-          console.log('Rename API URL:', url);
-          console.log('Making PUT request to backend...');
+          // fileIdが"file-"で始まる場合は一時的なIDなのでバックエンド更新をスキップ
+          if (!fileId.startsWith('file-')) {
+            // エピソードの情報を取得
+            const state = get();
+            const book = state.books.find(b => b.id === bookId);
+            const file = book?.files?.find(f => f.id === fileId);
 
-          const response = await fetch(url, {
-            method: 'PUT'
-          });
+            if (!file) {
+              throw new Error('File not found in local state');
+            }
 
-          console.log('Rename response received');
-          console.log('Response status:', response.status);
-          console.log('Response ok:', response.ok);
+            const url = `http://localhost:8080/api/episodes/${fileId}`;
+            console.log('Rename API URL:', url);
+            console.log('Making PUT request to backend...');
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Rename API Error response:', errorText);
-            throw new Error(`Rename API Error: ${response.status} - ${errorText}`);
+            const response = await fetch(url, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                title: newTitle,
+                content: file.content
+              })
+            });
+
+            console.log('Rename response received');
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error('Rename API Error response:', errorText);
+              throw new Error(`Rename API Error: ${response.status} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            console.log('Rename API Success response:', data);
+            console.log('✅ File renamed in backend successfully');
+          } else {
+            console.log('⚠️ Temporary file ID detected, skipping backend rename');
           }
 
-          const data = await response.json();
-          console.log('Rename API Success response:', data);
-          console.log('✅ File renamed in backend successfully');
-          
           // バックエンド成功後にローカル状態を更新
           console.log('Updating local state after successful API call...');
           console.log('Current books state before update:', get().books);
           console.log('Looking for book with ID:', bookId);
           console.log('Looking for file with ID:', fileId);
-          
+
           set((state) => {
             console.log('Inside set function - current state.books:', state.books);
             const updatedBooks = state.books.map(book => {
@@ -345,7 +368,7 @@ export const useStore = create<AppStore>()(
                   }
                   return f;
                 });
-                
+
                 const updatedBook = {
                   ...book,
                   files: updatedFiles,
@@ -356,11 +379,11 @@ export const useStore = create<AppStore>()(
               }
               return book;
             });
-            
+
             console.log('Final updated books:', updatedBooks);
             return { books: updatedBooks };
           });
-          
+
           console.log('Local state updated successfully');
           console.log('New books state after update:', get().books);
           console.log('=== RENAME PROJECT FILE COMPLETE ===');
@@ -374,12 +397,12 @@ export const useStore = create<AppStore>()(
         console.log('=== DELETE PROJECT FILE ===');
         console.log('Book ID:', bookId);
         console.log('File ID:', fileId);
-        
+
         // 削除するファイルを取得
         const state = get();
         const book = state.books.find(b => b.id === bookId);
         const file = book?.files?.find(f => f.id === fileId);
-        
+
         if (!file) {
           console.error('❌ File not found in local state');
           return;
@@ -401,27 +424,32 @@ export const useStore = create<AppStore>()(
           )
         }));
 
-        // バックエンドからも削除
+        // バックエンドからも削除（エピソードAPIを使用）
         try {
-          const url = `http://localhost:8000/api/projects/${bookId}/files/${encodeURIComponent(file.title)}`;
-          console.log('Delete API URL:', url);
+          // fileIdが"file-"で始まる場合は一時的なIDなのでバックエンド削除をスキップ
+          if (!fileId.startsWith('file-')) {
+            const url = `http://localhost:8080/api/episodes/${fileId}`;
+            console.log('Delete API URL:', url);
 
-          const response = await fetch(url, {
-            method: 'DELETE'
-          });
+            const response = await fetch(url, {
+              method: 'DELETE'
+            });
 
-          console.log('Delete response status:', response.status);
-          console.log('Delete response ok:', response.ok);
+            console.log('Delete response status:', response.status);
+            console.log('Delete response ok:', response.ok);
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Delete API Error response:', errorText);
-            throw new Error(`Delete API Error: ${response.status} - ${errorText}`);
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error('Delete API Error response:', errorText);
+              throw new Error(`Delete API Error: ${response.status} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            console.log('Delete API Success response:', data);
+            console.log('✅ File deleted from backend successfully');
+          } else {
+            console.log('⚠️ Temporary file ID detected, skipping backend deletion');
           }
-
-          const data = await response.json();
-          console.log('Delete API Success response:', data);
-          console.log('✅ File deleted from backend successfully');
         } catch (error) {
           console.error('❌ Failed to delete file from backend:', error);
         }
@@ -473,9 +501,107 @@ export const useStore = create<AppStore>()(
         }
       })),
 
+      addMaterialFromFile: async (bookId: string, file: File) => {
+        try {
+          // Bookオブジェクトを取得して、実際のIDを確認
+          const state = get();
+          const book = state.books.find(b => b.id === bookId);
+
+          if (!book) {
+            throw new Error(`Book not found: ${bookId}`);
+          }
+
+          // Book IDが数値文字列の場合はそのまま使用
+          // "book-"で始まる場合は、バックエンドからBook情報を取得して数値IDを取得
+          let backendBookId: string;
+          if (book.id.startsWith('book-')) {
+            // バックエンドからBook情報を取得
+            try {
+              const response = await fetch(`http://localhost:8080/api/books`, {
+                method: 'GET'
+              });
+              if (!response.ok) {
+                throw new Error('Failed to fetch books');
+              }
+              const books = await response.json();
+              // タイトルでマッチング
+              const matchedBook = books.find((b: any) => b.title === book.title);
+              if (matchedBook) {
+                backendBookId = String(matchedBook.id);
+              } else {
+                // マッチしない場合は、bookIdから数値部分を抽出（フォールバック）
+                backendBookId = book.id.replace('book-', '');
+              }
+            } catch (error) {
+              console.warn('Failed to fetch books from backend, using fallback:', error);
+              // フォールバック: bookIdから数値部分を抽出
+              backendBookId = book.id.replace('book-', '');
+            }
+          } else {
+            // 既に数値文字列の場合はそのまま使用
+            backendBookId = book.id;
+          }
+
+          // バックエンドAPIに送信して資料を追加
+          const material = await addMaterialFromFileAPI(file, backendBookId);
+
+          // ローカル状態も更新
+          set((state) => ({
+            materials: {
+              ...state.materials,
+              [bookId]: [...(state.materials[bookId] || []), material]
+            }
+          }));
+        } catch (error) {
+          console.error('Error adding material from file:', error);
+          throw error;
+        }
+      },
+
       loadMaterialsFromBackend: async (bookId: string) => {
         try {
-          const response = await fetch(`http://localhost:8000/api/materials/${bookId}`, {
+          // Bookオブジェクトを取得して、実際のIDを確認
+          const state = get();
+          const book = state.books.find(b => b.id === bookId);
+
+          if (!book) {
+            console.warn(`Book not found: ${bookId}`);
+            return;
+          }
+
+          // Book IDが数値文字列の場合はそのまま使用
+          // "book-"で始まる場合は、バックエンドからBook情報を取得して数値IDを取得
+          let backendBookId: string;
+          if (book.id.startsWith('book-')) {
+            // バックエンドからBook情報を取得
+            try {
+              const booksResponse = await fetch(`http://localhost:8080/api/books`, {
+                method: 'GET'
+              });
+              if (!booksResponse.ok) {
+                throw new Error('Failed to fetch books');
+              }
+              const books = await booksResponse.json();
+              // タイトルでマッチング
+              const matchedBook = books.find((b: any) => b.title === book.title);
+              if (matchedBook) {
+                backendBookId = String(matchedBook.id);
+              } else {
+                // マッチしない場合は、bookIdから数値部分を抽出（フォールバック）
+                backendBookId = book.id.replace('book-', '');
+              }
+            } catch (error) {
+              console.warn('Failed to fetch books from backend, using fallback:', error);
+              // フォールバック: bookIdから数値部分を抽出
+              backendBookId = book.id.replace('book-', '');
+            }
+          } else {
+            // 既に数値文字列の場合はそのまま使用
+            backendBookId = book.id;
+          }
+
+          // 正しいエンドポイント: /api/books/{id}/materials
+          const response = await fetch(`http://localhost:8080/api/books/${backendBookId}/materials`, {
             method: 'GET'
           });
 
@@ -485,7 +611,7 @@ export const useStore = create<AppStore>()(
           }
 
           const materials = await response.json();
-          
+
           set((state) => ({
             materials: {
               ...state.materials,
@@ -545,29 +671,33 @@ export const useStore = create<AppStore>()(
 
       createBook: async (title: string, coverEmoji?: string) => {
         try {
-          // バックエンドAPIを呼び出してプロジェクトを作成
-          const formData = new FormData();
-          formData.append('title', title);
-
-          // IDを生成（フロントエンド側で生成して統一）
-          const bookId = `book-${Date.now()}`;
-          formData.append('id', bookId);
-
-          const response = await fetch('http://localhost:8000/api/projects', {
+          // バックエンドAPIを呼び出してBookを作成（JSON形式）
+          const response = await fetch('http://localhost:8080/api/books', {
             method: 'POST',
-            body: formData
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              title: title,
+              description: '',
+              genre: '',
+              status: 'draft'
+            })
           });
 
           if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API Error Response:', errorText);
             throw new Error(`API Error: ${response.status}`);
           }
 
           const data = await response.json();
+          console.log('Created book from backend:', data);
 
-          // 新しいBookオブジェクトを作成
+          // バックエンドから返されたデータを使用してBookオブジェクトを作成
           const newBook: Book = {
-            id: bookId,
-            title: title,
+            id: String(data.id), // バックエンドの数値IDを文字列に変換
+            title: data.title,
             coverEmoji: coverEmoji || '📚',
             updatedAt: Date.now(),
             sourceCount: 0,
@@ -604,46 +734,56 @@ export const useStore = create<AppStore>()(
       loadBooksFromBackend: async () => {
         console.log('=== LOAD BOOKS FROM BACKEND ===');
         try {
-          // プロジェクト一覧を取得
-          const response = await fetch('http://localhost:8000/api/projects', {
+          // Book一覧を取得
+          const response = await fetch('http://localhost:8080/api/books', {
             method: 'GET'
           });
 
           if (!response.ok) {
-            console.error('Failed to load projects from backend:', response.status);
+            console.error('Failed to load books from backend:', response.status);
             return;
           }
 
           const data = await response.json();
-          console.log('Projects from backend:', data);
+          console.log('Books from backend:', data);
 
-          const projects = data.projects || [];
+          const booksData = Array.isArray(data) ? data : (data.books || []);
           const books: Book[] = [];
 
-          // 各プロジェクトの詳細を取得
-          for (const project of projects) {
+          // 各Bookの詳細を取得
+          for (const bookData of booksData) {
             try {
-              const detailResponse = await fetch(`http://localhost:8000/api/projects/${project.id}`, {
+              const detailResponse = await fetch(`http://localhost:8080/api/books/${bookData.id}`, {
                 method: 'GET'
               });
 
               if (detailResponse.ok) {
                 const detail = await detailResponse.json();
+
+                // バックエンドから取得したepisodesをfilesにマッピング
+                const files = (detail.episodes || []).map((episode: any) => ({
+                  id: String(episode.id),
+                  title: episode.title,
+                  content: episode.content,
+                  createdAt: new Date(episode.created_at).getTime(),
+                  updatedAt: new Date(episode.updated_at).getTime()
+                }));
+
                 const book: Book = {
-                  id: detail.id,
+                  id: String(detail.id),
                   title: detail.title,
                   coverEmoji: detail.coverEmoji || '📚',
-                  updatedAt: new Date(detail.updatedAt || detail.created_at).getTime(),
-                  sourceCount: detail.sourceCount || 0,
+                  updatedAt: new Date(detail.updated_at || detail.created_at).getTime(),
+                  sourceCount: (detail.episodes || []).length,
                   archived: detail.archived || false,
                   content: '',
-                  files: detail.files || [],
-                  activeFileId: detail.activeFileId
+                  files: files,
+                  activeFileId: files.length > 0 ? files[0].id : null
                 };
                 books.push(book);
               }
             } catch (error) {
-              console.error(`Failed to load project detail for ${project.id}:`, error);
+              console.error(`Failed to load book detail for ${bookData.id}:`, error);
             }
           }
 
@@ -658,7 +798,7 @@ export const useStore = create<AppStore>()(
         console.log('=== REFRESH BOOK FROM BACKEND ===');
         console.log('Book ID:', bookId);
         try {
-          const response = await fetch(`http://localhost:8000/api/projects/${bookId}`, {
+          const response = await fetch(`http://localhost:8080/api/books/${bookId}`, {
             method: 'GET'
           });
 
@@ -668,19 +808,30 @@ export const useStore = create<AppStore>()(
           }
 
           const detail = await response.json();
+
+          // バックエンドから取得したepisodesをfilesにマッピング
+          const files = (detail.episodes || []).map((episode: any) => ({
+            id: String(episode.id),
+            title: episode.title,
+            content: episode.content,
+            createdAt: new Date(episode.created_at).getTime(),
+            updatedAt: new Date(episode.updated_at).getTime()
+          }));
+
           const updatedBook: Book = {
-            id: detail.id,
+            id: String(detail.id),
             title: detail.title,
             coverEmoji: detail.coverEmoji || '📚',
-            updatedAt: new Date(detail.updatedAt || detail.created_at).getTime(),
-            sourceCount: detail.sourceCount || 0,
+            updatedAt: new Date(detail.updated_at || detail.created_at).getTime(),
+            sourceCount: (detail.episodes || []).length,
             archived: detail.archived || false,
             content: '',
-            files: detail.files || [],
-            activeFileId: detail.activeFileId
+            files: files,
+            activeFileId: files.length > 0 ? files[0].id : null
           };
 
           console.log('Refreshed book:', updatedBook);
+          console.log('Mapped files from episodes:', files);
 
           set((state) => ({
             books: state.books.map(book =>
@@ -692,23 +843,49 @@ export const useStore = create<AppStore>()(
         }
       },
 
-      saveProjectFile: async (projectId: string, filename: string, content: string) => {
+      saveProjectFile: async (projectId: string, fileId: string, filename: string, content: string) => {
         console.log('=== SAVE PROJECT FILE ===');
         console.log('Project ID:', projectId);
+        console.log('File ID:', fileId);
         console.log('Filename:', filename);
         console.log('Content length:', content.length);
-        
-        try {
-          // バックエンドAPIを呼び出してファイルを保存
-          const formData = new FormData();
-          formData.append('content', content);
 
-          const url = `http://localhost:8000/api/projects/${projectId}/files/${encodeURIComponent(filename)}`;
+        try {
+          // fileIdから実際のエピソードIDを抽出
+          // fileIdが数値の場合は既存エピソード、"file-"で始まる場合は新規作成
+          const isNewFile = fileId.startsWith('file-');
+          let url: string;
+          let method: string;
+          let body: string;
+
+          if (isNewFile) {
+            // 新規エピソードを作成
+            url = `http://localhost:8080/api/books/${projectId}/episodes`;
+            method = 'POST';
+            body = JSON.stringify({
+              title: filename,
+              content: content,
+              episode_no: Date.now() // タイムスタンプをエピソード番号として使用
+            });
+          } else {
+            // 既存エピソードを更新
+            url = `http://localhost:8080/api/episodes/${fileId}`;
+            method = 'PUT';
+            body = JSON.stringify({
+              title: filename,
+              content: content
+            });
+          }
+
           console.log('API URL:', url);
+          console.log('Method:', method);
 
           const response = await fetch(url, {
-            method: 'PUT',
-            body: formData
+            method: method,
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: body
           });
 
           console.log('Response status:', response.status);
@@ -723,46 +900,66 @@ export const useStore = create<AppStore>()(
           const data = await response.json();
           console.log('API Success response:', data);
 
-          // ローカル状態のファイルも更新
-          set((state) => ({
-            books: state.books.map(book => {
-              if (book.id === projectId) {
-                const updatedFiles = book.files?.map(file =>
-                  file.title === filename
-                    ? { ...file, content, updatedAt: Date.now() }
-                    : file
-                ) || [];
+          // 新規作成の場合、バックエンドから返されたIDでファイルを更新
+          if (isNewFile && data.id) {
+            const newFile: ProjectFile = {
+              id: String(data.id),
+              title: data.title,
+              content: data.content,
+              createdAt: new Date(data.created_at).getTime(),
+              updatedAt: new Date(data.updated_at).getTime()
+            };
 
-                // ファイルが存在しない場合は新規作成
-                if (!updatedFiles.some(file => file.title === filename)) {
-                  updatedFiles.push({
-                    id: `file-${Date.now()}`,
-                    title: filename,
-                    content,
-                    createdAt: Date.now(),
+            set((state) => ({
+              books: state.books.map(book => {
+                if (book.id === projectId) {
+                  // 一時IDのファイルを新しいファイルに置き換え
+                  const updatedFiles = book.files?.map(file =>
+                    file.id === fileId ? newFile : file
+                  ) || [newFile];
+
+                  return {
+                    ...book,
+                    files: updatedFiles,
+                    activeFileId: String(data.id),
+                    sourceCount: updatedFiles.length,
                     updatedAt: Date.now()
-                  });
-                  console.log('Added new file to local state:', filename);
-                } else {
-                  console.log('Updated existing file in local state:', filename);
+                  };
                 }
+                return book;
+              })
+            }));
+            console.log('Updated file ID from', fileId, 'to', data.id);
+            console.log('New file created:', newFile);
+          } else {
+            // 既存ファイルの更新の場合も状態を更新
+            set((state) => ({
+              books: state.books.map(book => {
+                if (book.id === projectId) {
+                  const updatedFiles = book.files?.map(file =>
+                    file.id === fileId
+                      ? { ...file, content, updatedAt: Date.now() }
+                      : file
+                  ) || [];
 
-                return {
-                  ...book,
-                  files: updatedFiles,
-                  updatedAt: Date.now()
-                };
-              }
-              return book;
-            })
-          }));
+                  return {
+                    ...book,
+                    files: updatedFiles,
+                    updatedAt: Date.now()
+                  };
+                }
+                return book;
+              })
+            }));
+            console.log('Updated existing file:', fileId);
+          }
 
           console.log('=== SAVE SUCCESS ===');
           return data;
         } catch (error) {
           console.error('=== SAVE ERROR ===');
           console.error('Error saving project file:', error);
-          
+
           // エラー時はローカルのみで保存（フォールバック）
           set((state) => ({
             books: state.books.map(book => {
@@ -802,9 +999,41 @@ export const useStore = create<AppStore>()(
         books: state.books.map(b => b.id === book.id ? book : b)
       })),
 
-      deleteBook: (bookId) => set((state) => ({
-        books: state.books.filter(b => b.id !== bookId)
-      })),
+      deleteBook: async (bookId) => {
+        console.log('=== DELETE BOOK ===');
+        console.log('Book ID:', bookId);
+
+        // まずローカル状態から削除
+        set((state) => ({
+          books: state.books.filter(b => b.id !== bookId)
+        }));
+
+        // バックエンドからも削除
+        try {
+          const url = `http://localhost:8080/api/books/${bookId}`;
+          console.log('Delete book API URL:', url);
+
+          const response = await fetch(url, {
+            method: 'DELETE'
+          });
+
+          console.log('Delete book response status:', response.status);
+          console.log('Delete book response ok:', response.ok);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Delete book API Error response:', errorText);
+            throw new Error(`Delete book API Error: ${response.status} - ${errorText}`);
+          }
+
+          const data = await response.json();
+          console.log('Delete book API Success response:', data);
+          console.log('✅ Book deleted from backend successfully');
+        } catch (error) {
+          console.error('❌ Failed to delete book from backend:', error);
+          // エラーの場合でもローカルでは削除済みなので続行
+        }
+      },
 
       duplicateBook: (bookId) => set((state) => {
         const book = state.books.find(b => b.id === bookId);
