@@ -47,13 +47,13 @@ export default function Panels({ leftPanel, centerPanel, rightPanel }: PanelsPro
     return (
       <div className="h-full flex">
         <PanelGroup direction="horizontal" className="flex-1">
-          <Panel defaultSize={40} minSize={35}>
+          <Panel defaultSize={33} minSize={31}>
             <div className="h-full border-r border-gray-200">
               {leftPanel}
             </div>
           </Panel>
           <PanelResizeHandle className="w-1 bg-gray-200 hover:bg-gray-300 transition-colors" />
-          <Panel defaultSize={60} minSize={45}>
+          <Panel defaultSize={67} minSize={45}>
             <div className="h-full">
               {centerPanel}
             </div>
@@ -79,7 +79,7 @@ export default function Panels({ leftPanel, centerPanel, rightPanel }: PanelsPro
   // デスクトップ表示（3ペイン）
   return (
     <PanelGroup direction="horizontal" className="h-full">
-      <Panel defaultSize={22} minSize={19} maxSize={28}>
+      <Panel defaultSize={26} minSize={25} maxSize={28}>
         <div className="h-full border-r border-gray-200">
           {leftPanel}
         </div>
