@@ -55,25 +55,51 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
   }, [bookId, addProjectFile]);
 
   // 新規ファイル作成
-  const handleCreateNewFile = useCallback(() => {
+  const handleCreateNewFile = useCallback(async () => {
     if (!newFileName.trim()) return;
     
     const fileName = newFileName.trim().endsWith('.txt') 
       ? newFileName.trim() 
       : `${newFileName.trim()}.txt`;
-      
-    const projectFile: ProjectFile = {
-      id: `file-${Date.now()}`,
-      title: fileName,
-      content: `# ${fileName.replace('.txt', '')}\n\n`,
-      createdAt: Date.now(),
-      updatedAt: Date.now()
+
+    // サーバーに送る Episode データ
+    const payload = {
+      title: fileName.replace('.txt', ''), // タイトルは拡張子なしで
+      content: `# ${fileName.replace('.txt', '')}\n\n`
     };
-    
-    addProjectFile(bookId, projectFile);
-    setActiveFile(bookId, projectFile.id);
-    setShowNewFileDialog(false);
-    setNewFileName('');
+
+    try {
+      // --- API呼び出し ---
+      const res = await fetch(`http://localhost:8080/api/books/${bookId}/episodes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        console.error("Failed to create episode");
+        return;
+      }
+
+      const createdEpisode = await res.json();
+
+      // --- ローカル state 更新 ---
+      const projectFile: ProjectFile = {
+        id: String(createdEpisode.id),
+        title: fileName,
+        content: createdEpisode.content,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+
+      addProjectFile(bookId, projectFile);
+      setActiveFile(bookId, projectFile.id);
+      setShowNewFileDialog(false);
+      setNewFileName('');
+
+    } catch (err) {
+      console.error(err);
+    }
   }, [newFileName, bookId, addProjectFile, setActiveFile]);
 
   // ドラッグ&ドロップ
