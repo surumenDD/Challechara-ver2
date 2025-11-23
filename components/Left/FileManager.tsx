@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Search, Plus, FileText, Download } from 'lucide-react';
+import { Upload, Search, Plus, FileText, Download, Trash } from 'lucide-react';
 import { useStore, ProjectFile, Book } from '@/lib/store';
 import { extractText } from '@/lib/file';
 
@@ -28,6 +28,9 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
   const [dragOver, setDragOver] = useState(false);
   const [showNewFileDialog, setShowNewFileDialog] = useState(false);
   const [newFileName, setNewFileName] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false); // 削除確認ダイアログの表示
+  const [activeFile, setActiveFileState] = useState<ProjectFile | null>(null); // 削除対象ファイル
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const files = book.files ?? [];
@@ -101,6 +104,41 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
       console.error(err);
     }
   }, [newFileName, bookId, addProjectFile, setActiveFile]);
+
+  const handleDeleteFile = async (fileId: string) => {
+    const targetFile = files.find(f => f.id === fileId);
+    if (!targetFile) return;
+
+    try {
+      console.log("=== DELETE FILE ===");
+      console.log("Deleting file:", targetFile.title);
+
+      const res = await fetch(`http://localhost:8080/api/episodes/${fileId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete episode");
+      }
+
+      // --- ストアから削除 ---
+      deleteProjectFile(bookId, fileId);
+
+      // activeFile の更新
+      const remainingFiles = (book.files ?? []).filter(f => f.id !== fileId);
+      if (remainingFiles.length > 0) {
+        setActiveFile(bookId, remainingFiles[0].id);
+      } else {
+        setActiveFile(bookId, null);
+      }
+
+      console.log("✅ File deleted successfully");
+
+    } catch (error) {
+      console.error("❌ Failed to delete file:", error);
+    }
+  };
 
   // ドラッグ&ドロップ
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -340,6 +378,70 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
                       {file.content.substring(0, 100)}...
                     </p>
                   </div>
+
+                {/* 🔥 削除ボタン */}
+                <button
+                  className="p-1 rounded hover:bg-red-50 text-red-500"
+                  onClick={(e) => {
+                    e.stopPropagation(); // クリックが file-item に伝播しないように
+                    setActiveFileState(file);  // 削除対象のファイルをセット
+                    setShowDeleteDialog(true); // ダイアログを表示
+                  }}
+                >
+                  <Trash className="w-4 h-4" />
+                </button>
+
+                {/* ファイル削除確認ダイアログ */}
+                {showDeleteDialog && activeFile && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                    <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-red-600">ファイルを削除</h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowDeleteDialog(false)}
+                          className="p-1"
+                        >
+                          ×
+                        </Button>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="text-sm text-gray-600">
+                          <p className="mb-2">以下のファイルを削除しますか？</p>
+                          <p className="font-medium text-gray-800 bg-gray-100 p-2 rounded">
+                            {activeFile.title}
+                          </p>
+                          <p className="text-red-600 mt-2 text-xs">
+                            ⚠️ この操作は元に戻せません。
+                          </p>
+                        </div>
+
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="ghost"
+                            onClick={() => setShowDeleteDialog(false)}
+                          >
+                            キャンセル
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => {
+                              handleDeleteFile(activeFile.id); // 実際に削除
+                              setShowDeleteDialog(false);       // ダイアログを閉じる
+                            }}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            削除する
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+
                 </div>
               </div>
             ))}
