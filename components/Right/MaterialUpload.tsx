@@ -246,23 +246,68 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
                   </div>
 
                   {/* 削除ボタン */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <button
+                    className="p-1 rounded hover:bg-red-50 text-red-500"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteMaterial(material.id);
                     }}
-                    className="p-1 text-red-600 hover:bg-red-50"
                   >
-                    <X className="w-4 h-4" />
-                  </Button>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* 資料削除確認ダイアログ */}
+      {showDeleteDialog && deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-red-600">資料を削除</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteDialog(false)}
+                className="p-1"
+              >
+                ×
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                <p className="mb-2">以下の資料を削除しますか？</p>
+                <p className="font-medium text-gray-800 bg-gray-100 p-2 rounded">
+                  {deleteTarget.title}
+                </p>
+                <p className="text-red-600 mt-2 text-xs">
+                  ⚠️ この操作は元に戻せません。
+                </p>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowDeleteDialog(false)}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={executeDelete}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  削除する
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
