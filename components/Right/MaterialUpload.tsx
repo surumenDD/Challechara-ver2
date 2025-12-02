@@ -128,8 +128,13 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
 
   return (
     <div className="h-full flex flex-col">
-      {/* アップロードエリア */}
+      {/* ヘッダー */}
       <div className="p-4 border-b border-gray-200">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="font-semibold text-lg">資料管理</h2>
+        </div>
+        
+        {/* アップロードエリア */}
         <div
           className={`dropzone p-4 mb-3 cursor-pointer ${dragOver ? 'drag-over' : ''}`}
           onDragOver={handleDragOver}
@@ -140,16 +145,16 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
           <div className="text-center">
             <Upload className="w-6 h-6 mx-auto mb-2 text-gray-400" />
             <p className="text-sm text-gray-600">
-              資料をアップロード
+              ファイルをドラッグ&ドロップ
               <br />
-              <span className="text-blue-600">クリックまたはドラッグ&ドロップ</span>
+              または<span className="text-blue-600">クリックして選択</span>
             </p>
             <p className="text-xs text-gray-500 mt-1">
               PDF, TXT, MD, DOCX対応
             </p>
           </div>
         </div>
-
+        
         <input
           ref={fileInputRef}
           type="file"
@@ -159,31 +164,27 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
           className="hidden"
         />
 
-        {/* 選択操作 */}
-        {bookMaterials.length > 0 && (
-          <div className="flex gap-2 justify-between items-center">
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSelectAll}
-              >
-                全選択
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSelectNone}
-                disabled={activeMaterialIds.length === 0}
-              >
-                解除
-              </Button>
-            </div>
-            <span className="text-sm text-gray-600">
-              {activeMaterialIds.length}件選択中
-            </span>
+        {/* 選択・ソート */}
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSelectAll}
+              disabled={bookMaterials.length === 0}
+            >
+              全選択
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSelectNone}
+              disabled={selectedMaterialIds.length === 0}
+            >
+              解除
+            </Button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* 選択中の資料チップ */}
@@ -214,33 +215,34 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
             {bookMaterials.map((material) => (
               <div
                 key={material.id}
-                className={`p-3 mb-2 rounded-lg border transition-colors cursor-pointer ${activeMaterialIds.includes(material.id)
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                onClick={() => handleToggleSelect(material.id)}
+                className={`p-3 mb-2 rounded border cursor-pointer transition-colors ${
+                  selectedMaterialIds.includes(material.id)
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
               >
                 <div className="flex items-start gap-3">
-                  {/* チェックボックス */}
                   <input
                     type="checkbox"
-                    checked={activeMaterialIds.includes(material.id)}
+                    checked={selectedMaterialIds.includes(material.id)}
                     onChange={() => handleToggleSelect(material.id)}
-                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="mt-1"
                     onClick={(e) => e.stopPropagation()}
                   />
-
-                  {/* コンテンツ */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm text-gray-900 truncate mb-1">
-                      {material.title}
-                    </h3>
-                    <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                  
+                  <Upload className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" />
+                  
+                  <div 
+                    className="flex-1 min-w-0"
+                    onClick={() => handleToggleSelect(material.id)}
+                  >
+                    <h3 className="font-medium text-sm truncate">{material.title}</h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(material.created_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-2">
                       {material.content.substring(0, 100)}...
                     </p>
-                    <div className="text-xs text-gray-500">
-                      {formatRelativeTime(material.createdAt)}
-                    </div>
                   </div>
 
                   {/* 削除ボタン */}
