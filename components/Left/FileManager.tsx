@@ -431,21 +431,12 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
       <div className="p-4 border-t border-gray-200">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">
-            {activeSourceIds.length}件選択中
+            {selectedEpisodeIds.length}件選択中
           </span>
           <Button
             variant="default"
-            onClick={handleDownload}
-            disabled={activeSourceIds.length === 0}
-            className="flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            ダウンロード
-          </Button>
-          <Button
-            variant="default"
             onClick={handleStartChat}
-            disabled={activeSourceIds.length === 0}
+            disabled={selectedEpisodeIds.length === 0}
             className="flex items-center gap-2"
           >
             <Search className="w-4 h-4" />
