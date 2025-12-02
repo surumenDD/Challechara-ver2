@@ -37,24 +37,39 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
 
   // ファイルアップロード処理
   const handleFiles = useCallback(async (uploadFiles: FileList) => {
+    // 既存のエピソード数を取得して連番を生成
+    const maxEpisodeNo = episodes.length > 0 
+      ? Math.max(...episodes.map(e => e.episode_no || 0))
+      : 0;
+    
+    let episodeCounter = maxEpisodeNo + 1;
+    
     for (const file of Array.from(uploadFiles)) {
-      if (file.type.match(/^(text\/|application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document))/)) {
+      // テキストファイル、Markdownファイルをサポート
+      const isTextFile = file.type.startsWith('text/') || 
+                        file.name.endsWith('.txt') || 
+                        file.name.endsWith('.md') || 
+                        file.name.endsWith('.markdown');
+      
+      if (isTextFile) {
         try {
           const content = await extractText(file);
-          const projectFile: ProjectFile = {
-            id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            title: file.name,
+          const payload = {
+            title: file.name.replace(/\.[^/.]+$/, ''),
             content,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
+            episode_no: episodeCounter++
           };
-          addProjectFile(bookId, projectFile);
+          await createEpisode(bookId, payload);
+          await refreshBookFromBackend(bookId);
         } catch (error) {
           console.error('ファイル処理エラー:', error);
+          alert(`ファイル「${file.name}」のアップロードに失敗しました。`);
         }
+      } else {
+        alert(`ファイル「${file.name}」は対応していません。テキストファイル (.txt, .md) をアップロードしてください。`);
       }
     }
-  }, [bookId, addProjectFile]);
+  }, [bookId, episodes, refreshBookFromBackend]);
 
   // 新規ファイル作成
   const handleCreateNewFile = useCallback(async () => {
