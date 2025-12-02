@@ -148,6 +148,45 @@ export default function RichEditor({ bookId }: RichEditorProps) {
     }, 0);
   }, [content, selectionStart, selectionEnd, rubyText, activeEpisode, bookId, convertToHtml, refreshBookFromBackend]);
 
+  // 傍点機能
+  const handleAddEmphasis = useCallback(() => {
+    if (!textareaRef.current || !activeEpisode) return;
+
+    const start = textareaRef.current.selectionStart;
+    const end = textareaRef.current.selectionEnd;
+    const selectedText = content.substring(start, end);
+    
+    if (selectedText && selectedText.trim()) {
+      // 選択テキストの長さ制限
+      if (selectedText.length > MAX_SELECTION_LENGTH) {
+        alert(`傍点を付けるテキストは${MAX_SELECTION_LENGTH}文字以内にしてください`);
+        return;
+      }
+      
+      const emphasisNotation = `《《${selectedText}》》`;
+      const before = content.substring(0, start);
+      const after = content.substring(end);
+      const newContent = before + emphasisNotation + after;
+      
+      setContent(newContent);
+      
+      // カーソル位置を調整
+      setTimeout(() => {
+        if (textareaRef.current) {
+          const newPosition = start + emphasisNotation.length;
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(newPosition, newPosition);
+        }
+      }, 0);
+    } else {
+      alert('傍点をつけたい文字を選択してください');
+    }
+  }, [content, activeEpisode]);
+
+  const getCharCount = () => {
+    return content.length;
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* ツールバー */}
