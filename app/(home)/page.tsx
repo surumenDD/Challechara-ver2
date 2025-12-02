@@ -99,12 +99,14 @@ export default function HomePage() {
       case 'rename':
         const newTitle = prompt('新しいタイトルを入力してください:', book.title);
         if (newTitle && newTitle.trim() !== book.title) {
-          updateBook({ ...book, title: newTitle.trim(), updatedAt: Date.now() });
+          updateBook(bookId, { title: newTitle.trim() });
         }
         break;
 
       case 'export':
-        exportAsTxt(book.title, book.content || '');
+        const allEpisodes = book.episodes || [];
+        const content = allEpisodes.map(ep => `${ep.title}\n\n${ep.content}`).join('\n\n---\n\n');
+        exportAsTxt(book.title, content);
         break;
 
       case 'delete':
