@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { Book, ChatMessage, Episode, Material, ProjectFile, UIState } from '../types';
+import { Book, ChatMessage, UIState } from '../types';
 
 export type UiSlice = {
   ui: UIState;
