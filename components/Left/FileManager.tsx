@@ -445,12 +445,12 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
         </div>
       </div>
 
-      {/* 新規ファイル作成ダイアログ */}
+      {/* 新規エピソード作成ダイアログ */}
       {showNewFileDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">新しいファイルを作成</h3>
+              <h3 className="text-lg font-semibold">新しいエピソードを作成</h3>
               <Button
                 variant="ghost"
                 size="sm"
@@ -463,11 +463,11 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">ファイル名</label>
+                <label className="block text-sm font-medium mb-1">エピソード名</label>
                 <Input
                   value={newFileName}
                   onChange={(e) => setNewFileName(e.target.value)}
-                  placeholder="ファイル名を入力..."
+                  placeholder="エピソード名を入力..."
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       handleCreateNewFile();
