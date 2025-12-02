@@ -37,19 +37,16 @@ export async function createBookRequest(title: string, description?: string): Pr
   });
 }
 
-  return {
-    id: String(data.id),
-    title: data.title,
-    coverEmoji: coverEmoji || data.coverEmoji || '📚',
-    updatedAt: Date.now(),
-    sourceCount: 0,
-    archived: data.archived || false,
-    content: '',
-    files: [],
-    activeFileId: null
-  };
+/**
+ * 書籍を更新
+ * PUT /api/books/:id
+ */
+export async function updateBookRequest(bookId: string, updates: Partial<Book>): Promise<Book> {
+  return apiRequest<Book>(`/books/${bookId}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates)
+  });
 }
-
 export async function deleteBookRequest(bookId: string): Promise<void> {
   await apiRequest(`/books/${bookId}`, { method: 'DELETE' });
 }
