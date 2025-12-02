@@ -2,21 +2,15 @@ import { Book, ProjectFile } from '@/lib/store/types';
 import { apiRequest } from './client';
 
 
+
+/**
+ * すべての書籍を取得（Episodes, Materialsを含む）
+ * GET /api/books
+ */
 export async function fetchBooksWithDetails(): Promise<Book[]> {
-  const listResponse = await apiRequest<BackendBookListResponse>('/books');
-  const entries = Array.isArray(listResponse) ? listResponse : listResponse.books || [];
-
-  const details = await Promise.all(entries.map(async (entry) => {
-    try {
-      return await fetchBookDetail(String(entry.id));
-    } catch (error) {
-      console.error(`Failed to fetch detail for book ${entry.id}:`, error);
-      return null;
-    }
-  }));
-
-  return details.filter((book): book is Book => Boolean(book));
+  return apiRequest<Book[]>('/books');
 }
+
 
 export async function fetchBookDetail(bookId: string): Promise<Book> {
   const detail = await apiRequest<BackendBookDetail>(`/books/${bookId}`);
