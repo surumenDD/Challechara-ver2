@@ -20,12 +20,18 @@ export type ChatSlice = {
 
 export type BookSlice = {
   books: Book[];
-  sortOrder: 'newest' | 'oldest' | 'titleAsc' | 'titleDesc';
+  activeEpisodeId: string | null;
+  selectedEpisodeIds: string[];
+  selectedMaterialIds: string[];
+  sortOrder: 'newest' | 'oldest' | 'a-z';
   viewMode: 'grid' | 'list';
   query: string;
   setSortOrder: (order: 'newest' | 'oldest' | 'titleAsc' | 'titleDesc') => void;
   setViewMode: (mode: 'grid' | 'list') => void;
   setQuery: (query: string) => void;
+  setActiveEpisodeId: (episodeId: string | null) => void;
+  setSelectedEpisodeIds: (ids: string[]) => void;
+  setSelectedMaterialIds: (ids: string[]) => void;
   addBook: (book: Book) => void;
   createBook: (title: string, coverEmoji?: string) => Promise<Book>;
   loadBooksFromBackend: () => Promise<void>;
