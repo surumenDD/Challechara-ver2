@@ -1,4 +1,4 @@
-import { Book, ProjectFile } from '@/lib/store/types';
+import { Book } from '@/lib/store/types';
 import { apiRequest } from './client';
 
 
