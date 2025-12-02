@@ -36,16 +36,9 @@ export type BookSlice = {
   createBook: (title: string, coverEmoji?: string) => Promise<Book>;
   loadBooksFromBackend: () => Promise<void>;
   refreshBookFromBackend: (bookId: string) => Promise<void>;
-  saveProjectFile: (projectId: string, fileId: string, filename: string, content: string) => Promise<ProjectFile | undefined>;
   updateBook: (book: Book) => void;
   deleteBook: (bookId: string) => Promise<void>;
-  duplicateBook: (bookId: string) => void;
   initializeBooks: () => void;
-  addProjectFile: (bookId: string, file: ProjectFile) => void;
-  updateProjectFile: (bookId: string, file: ProjectFile) => Promise<void>;
-  renameProjectFile: (bookId: string, fileId: string, oldTitle: string, newTitle: string) => Promise<void>;
-  deleteProjectFile: (bookId: string, fileId: string) => Promise<void>;
-  setActiveFile: (bookId: string, fileId: string | null) => void;
 };
 
 export type AppStore = UiSlice & SourceSlice & MaterialSlice & ChatSlice & BookSlice & EditorSlice;
