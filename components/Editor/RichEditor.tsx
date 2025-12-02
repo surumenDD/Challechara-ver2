@@ -96,55 +96,57 @@ export default function RichEditor({ bookId }: RichEditorProps) {
   }, [content, activeEpisode]);
 
   const applyRuby = useCallback(() => {
-    if (!editor || !selectedText || !rubyText) return;
-
-    const rubyHtml = `<ruby>{selectedText}<rt>${rubyText}</rt></ruby>`;
-    editor.chain().focus().insertContent(rubyHtml).run();
+    if (!rubyText.trim()) return;
     
+    // ルビの長さ制限
+    if (rubyText.length > MAX_RUBY_LENGTH) {
+      alert(`ルビは${MAX_RUBY_LENGTH}文字以内にしてください`);
+      return;
+    }
+    
+    const selectedText = content.substring(selectionStart, selectionEnd);
+    
+    // 選択テキストの長さ制限
+    if (selectedText.length > MAX_SELECTION_LENGTH) {
+      alert(`ルビを振るテキストは${MAX_SELECTION_LENGTH}文字以内にしてください`);
+      return;
+    }
+    
+    const rubyNotation = `|${selectedText}《${rubyText}》`;
+    const before = content.substring(0, selectionStart);
+    const after = content.substring(selectionEnd);
+    const newContent = before + rubyNotation + after;
+    
+    setContent(newContent);
     setShowRubyModal(false);
     setRubyText('');
-    setSelectedText('');
-  }, [editor, selectedText, rubyText]);
-
-  // キーボードショートカット
-  // ハイドレーション後にマウント状態を更新
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
-        switch (e.key) {
-          case 'b':
-            e.preventDefault();
-            editor?.chain().focus().toggleBold().run();
-            break;
-          case 'i':
-            e.preventDefault();
-            editor?.chain().focus().toggleItalic().run();
-            break;
-          case 'u':
-            e.preventDefault();
-            editor?.chain().focus().toggleUnderline?.().run();
-            break;
-        }
+    
+    // 自動保存をトリガー
+    if (activeEpisode) {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor]);
-
-  const getWordCount = () => {
-    if (!editor) return 0;
-    const text = editor.getText();
-    return text.length;
-  };
-
-  if (!editor) {
-    return <div className="p-4">エディタを読み込んでいます...</div>;
-  }
+      
+      saveTimeoutRef.current = setTimeout(async () => {
+        const htmlContent = convertToHtml(newContent);
+        try {
+          await updateEpisode(activeEpisode.id, { content: htmlContent });
+          await refreshBookFromBackend(bookId);
+        } catch (error) {
+          console.error('Failed to save episode:', error);
+        }
+      }, 500);
+    }
+    
+    // カーソル位置を調整
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newPosition = selectionStart + rubyNotation.length;
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newPosition, newPosition);
+      }
+    }, 0);
+  }, [content, selectionStart, selectionEnd, rubyText, activeEpisode, bookId, convertToHtml, refreshBookFromBackend]);
 
   return (
     <div className="h-full flex flex-col">
