@@ -26,7 +26,7 @@ export type BookSlice = {
   sortOrder: 'newest' | 'oldest' | 'a-z';
   viewMode: 'grid' | 'list';
   query: string;
-  setSortOrder: (order: 'newest' | 'oldest' | 'titleAsc' | 'titleDesc') => void;
+  setSortOrder: (order: 'newest' | 'oldest' | 'a-z') => void;
   setViewMode: (mode: 'grid' | 'list') => void;
   setQuery: (query: string) => void;
   setActiveEpisodeId: (episodeId: string | null) => void;
