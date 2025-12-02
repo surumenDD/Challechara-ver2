@@ -21,114 +21,10 @@ export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
   setSelectedMaterialIds: (ids) => set({ selectedMaterialIds: ids }),
 
   addBook: (book) => set((state) => ({ books: [...state.books, book] })),
-  addProjectFile: (bookId, file) => set((state) => ({
-    books: state.books.map((book) =>
-      book.id === bookId
-        ? {
-          ...book,
-          files: [...(book.files || []), file],
-          activeFileId: book.activeFileId || file.id,
-          updatedAt: Date.now()
-        }
-        : book
-    )
-  })),
-  updateProjectFile: async (bookId, file) => {
-    set((state) => ({
-      books: state.books.map((book) =>
-        book.id === bookId
-          ? {
-            ...book,
-            files: (book.files || []).map((f) => (f.id === file.id ? file : f)),
-            updatedAt: Date.now()
-          }
-          : book
-      )
-    }));
 
+  createBook: async (title, description) => {
     try {
-      await get().saveProjectFile(bookId, file.id, file.title, file.content);
-    } catch (error) {
-      console.error('Failed to save project file:', error);
-    }
-  },
-  renameProjectFile: async (bookId, fileId, oldTitle, newTitle) => {
-    if (!newTitle || oldTitle === newTitle) {
-      return;
-    }
-
-    const book = get().books.find((b) => b.id === bookId);
-    const file = book?.files?.find((f) => f.id === fileId);
-    if (!file) {
-      throw new Error('File not found');
-    }
-
-    if (isTemporaryFileId(fileId)) {
-      set((state) => ({
-        books: state.books.map((b) =>
-          b.id === bookId
-            ? {
-              ...b,
-              files: (b.files || []).map((f) => (f.id === fileId ? { ...f, title: newTitle, updatedAt: Date.now() } : f))
-            }
-            : b
-        )
-      }));
-      return;
-    }
-
-    try {
-      const updatedFile = await renameEpisodeRequest(fileId, newTitle, file.content);
-      set((state) => ({
-        books: state.books.map((b) =>
-          b.id === bookId
-            ? {
-              ...b,
-              files: replaceFile(b.files, updatedFile, fileId)
-            }
-            : b
-        )
-      }));
-    } catch (error) {
-      console.error('Failed to rename project file:', error);
-      throw error;
-    }
-  },
-  deleteProjectFile: async (bookId, fileId) => {
-    set((state) => ({
-      books: state.books.map((book) =>
-        book.id === bookId
-          ? {
-            ...book,
-            files: (book.files || []).filter((file) => file.id !== fileId),
-            activeFileId:
-              book.activeFileId === fileId
-                ? (book.files || []).find((file) => file.id !== fileId)?.id || null
-                : book.activeFileId,
-            updatedAt: Date.now()
-          }
-          : book
-      )
-    }));
-
-    if (isTemporaryFileId(fileId)) {
-      return;
-    }
-
-    try {
-      await deleteEpisodeRequest(fileId);
-    } catch (error) {
-      console.error('Failed to delete project file:', error);
-    }
-  },
-  setActiveFile: (bookId, fileId) => set((state) => ({
-    books: state.books.map((book) =>
-      book.id === bookId ? { ...book, activeFileId: fileId, updatedAt: Date.now() } : book
-    )
-  })),
-  createBook: async (title, coverEmoji) => {
-    try {
-      const newBook = await createBookRequest(title, coverEmoji);
+      const newBook = await createBookRequest(title, description);
       set((state) => ({ books: [...state.books, newBook] }));
       return newBook;
     } catch (error) {
@@ -199,17 +95,7 @@ export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
       console.error('Failed to delete book from backend:', error);
     }
   },
-  duplicateBook: (bookId) => set((state) => {
-    const book = state.books.find((b) => b.id === bookId);
-    if (!book) return state;
-    const newBook: Book = {
-      ...book,
-      id: `book-${Date.now()}`,
-      title: `${book.title}のコピー`,
-      updatedAt: Date.now()
-    };
-    return { books: [...state.books, newBook] };
-  }),
+
   initializeBooks: () => {
     const { loadBooksFromBackend } = get();
     loadBooksFromBackend()
