@@ -54,12 +54,12 @@ export default function BookList({ books, onBookClick, onBookAction }: BookListP
 
             {/* 更新日 */}
             <div className="col-span-2 flex items-center">
-              <span className="text-sm text-gray-600">{formatDate(book.updatedAt)}</span>
+              <span className="text-sm text-gray-600">{new Date(book.updated_at).toLocaleDateString()}</span>
             </div>
 
             {/* エピソード数 */}
             <div className="col-span-2 flex items-center">
-              <span className="text-sm text-gray-600">{book.sourceCount}個</span>
+              <span className="text-sm text-gray-600">{book.episodes?.length || 0}個</span>
             </div>
 
             {/* メニュー */}
