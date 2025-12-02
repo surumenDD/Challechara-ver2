@@ -187,6 +187,31 @@ export default function RichEditor({ bookId }: RichEditorProps) {
     return content.length;
   };
 
+  // なろう形式でエクスポート
+  const handleExportForNarou = useCallback(() => {
+    if (!activeEpisode) return;
+    
+    // すでになろう記法なのでそのまま使用
+    const exportContent = content.trim();
+    
+    // ファイル名をサニタイズ（パストラバーサル対策）
+    const sanitizeFilename = (name: string) => {
+      return name.replace(/[<>:"\/\\|?*\x00-\x1f]/g, '_').substring(0, 255);
+    };
+    
+    // ファイルダウンロード（UTF-8 BOM付き - なろうで文字化け防止）
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + exportContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = sanitizeFilename(activeEpisode.title || 'episode') + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [content, activeEpisode]);
+
   return (
     <div className="h-full flex flex-col">
       {/* ツールバー */}
