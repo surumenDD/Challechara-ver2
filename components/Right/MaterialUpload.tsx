@@ -13,13 +13,10 @@ interface MaterialUploadProps {
 
 export default function MaterialUpload({ bookId }: MaterialUploadProps) {
   const {
-    materials,
-    addMaterial,
-    addMaterialFromFile,
-    loadMaterialsFromBackend,
-    deleteMaterial,
-    activeMaterialIds,
-    setActiveMaterialIds
+    books,
+    selectedMaterialIds,
+    setSelectedMaterialIds,
+    refreshBookFromBackend
   } = useStore();
 
   const [dragOver, setDragOver] = useState(false);
@@ -76,63 +73,58 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
 
   // 資料選択
   const handleToggleSelect = useCallback((materialId: string) => {
-    const newSelection = activeMaterialIds.includes(materialId)
-      ? activeMaterialIds.filter(id => id !== materialId)
-      : [...activeMaterialIds, materialId];
-    setActiveMaterialIds(newSelection);
-  }, [activeMaterialIds, setActiveMaterialIds]);
+    const newSelection = selectedMaterialIds.includes(materialId)
+      ? selectedMaterialIds.filter(id => id !== materialId)
+      : [...selectedMaterialIds, materialId];
+    setSelectedMaterialIds(newSelection);
+  }, [selectedMaterialIds, setSelectedMaterialIds]);
 
   // 全選択・全解除
   const handleSelectAll = useCallback(() => {
     const allIds = bookMaterials.map(m => m.id);
-    setActiveMaterialIds(allIds);
-  }, [bookMaterials, setActiveMaterialIds]);
+    setSelectedMaterialIds(allIds);
+  }, [bookMaterials, setSelectedMaterialIds]);
 
   const handleSelectNone = useCallback(() => {
-    setActiveMaterialIds([]);
-  }, [setActiveMaterialIds]);
+    setSelectedMaterialIds([]);
+  }, [setSelectedMaterialIds]);
 
   // チップ削除
   const handleRemoveMaterial = useCallback((materialId: string) => {
-    const newSelection = activeMaterialIds.filter(id => id !== materialId);
-    setActiveMaterialIds(newSelection);
-  }, [activeMaterialIds, setActiveMaterialIds]);
+    const newSelection = selectedMaterialIds.filter(id => id !== materialId);
+    setSelectedMaterialIds(newSelection);
+  }, [selectedMaterialIds, setSelectedMaterialIds]);
 
   // 資料削除
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Material | null>(null);
+
   const handleDeleteMaterial = useCallback(async (materialId: string) => {
-    if (confirm('この資料を削除しますか？')) {
-      try {
-        // Material IDを文字列に変換
-        const materialIdStr = String(materialId);
+    const targetMaterial = bookMaterials.find(m => m.id === materialId);
+    if (!targetMaterial) return;
+    
+    setDeleteTarget(targetMaterial);
+    setShowDeleteDialog(true);
+  }, [bookMaterials]);
 
-        // Material IDから数値IDを抽出（material-xxx形式の場合）
-        const numericMaterialId = materialIdStr.startsWith('material-')
-          ? materialIdStr.replace('material-', '').split('-')[0]
-          : materialIdStr;
-
-        // バックエンドAPIを使用して削除（正しいエンドポイント: /api/materials/{id}）
-        const response = await fetch(`http://localhost:8080/api/materials/${numericMaterialId}`, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) {
-          throw new Error(`Delete failed: ${response.statusText}`);
-        }
-
-        // フロントエンドの状態を更新
-        deleteMaterial(bookId, materialId);
-        // 選択からも削除
-        const newSelection = activeMaterialIds.filter(id => id !== materialId);
-        setActiveMaterialIds(newSelection);
-      } catch (error) {
-        console.error('資料削除エラー:', error);
-        // エラーの場合はフォールバック処理（既存のローカル処理）
-        deleteMaterial(bookId, materialId);
-        const newSelection = activeMaterialIds.filter(id => id !== materialId);
-        setActiveMaterialIds(newSelection);
-      }
+  const executeDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    
+    try {
+      const { deleteMaterial } = await import('@/lib/api/materials');
+      await deleteMaterial(deleteTarget.id);
+      await refreshBookFromBackend(bookId);
+      
+      // 選択からも削除
+      const newSelection = selectedMaterialIds.filter(id => id !== deleteTarget.id);
+      setSelectedMaterialIds(newSelection);
+    } catch (error) {
+      console.error('資料削除エラー:', error);
+    } finally {
+      setShowDeleteDialog(false);
+      setDeleteTarget(null);
     }
-  }, [deleteMaterial, bookId, activeMaterialIds, setActiveMaterialIds]);
+  }, [deleteTarget, bookId, selectedMaterialIds, setSelectedMaterialIds, refreshBookFromBackend]);
 
   return (
     <div className="h-full flex flex-col">
