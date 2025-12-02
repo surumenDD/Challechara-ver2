@@ -1,25 +1,9 @@
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Bold,
-  Italic,
-  Underline,
-  Heading1,
-  Heading2,
-  Heading3,
-  List,
-  ListOrdered,
-  Quote,
-  Code,
-  Undo,
-  Redo,
-  X
-} from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
 interface RichEditorProps {
@@ -30,8 +14,11 @@ export default function RichEditor({ bookId }: RichEditorProps) {
   const { books, updateProjectFile } = useStore();
   const [showRubyModal, setShowRubyModal] = useState(false);
   const [rubyText, setRubyText] = useState('');
-  const [selectedText, setSelectedText] = useState('');
-  const [isMounted, setIsMounted] = useState(false);
+  const [content, setContent] = useState('');
+  const [selectionStart, setSelectionStart] = useState(0);
+  const [selectionEnd, setSelectionEnd] = useState(0);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const book = books.find(b => b.id === bookId);
   const activeFile = book?.files?.find(f => f.id === book.activeFileId);
@@ -214,157 +201,77 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
   return (
     <div className="h-full flex flex-col">
-      {/* ツールバー */}
-      <div className="p-3 border-b border-gray-200 bg-gray-50 flex flex-wrap gap-1">
-        {/* 基本装飾 */}
-        <Button
-          variant={editor.isActive('bold') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className="p-2"
-          title="太字 (Ctrl+B)"
-        >
-          <Bold className="w-4 h-4" />
-        </Button>
-        
-        <Button
-          variant={editor.isActive('italic') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className="p-2"
-          title="斜体 (Ctrl+I)"
-        >
-          <Italic className="w-4 h-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-gray-300 mx-1" />
-
-        {/* 見出し */}
-        <Button
-          variant={editor.isActive('heading', { level: 1 }) ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          className="p-2"
-          title="見出し1"
-        >
-          <Heading1 className="w-4 h-4" />
-        </Button>
-        
-        <Button
-          variant={editor.isActive('heading', { level: 2 }) ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className="p-2"
-          title="見出し2"
-        >
-          <Heading2 className="w-4 h-4" />
-        </Button>
-        
-        <Button
-          variant={editor.isActive('heading', { level: 3 }) ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className="p-2"
-          title="見出し3"
-        >
-          <Heading3 className="w-4 h-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-gray-300 mx-1" />
-
-        {/* リスト */}
-        <Button
-          variant={editor.isActive('bulletList') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className="p-2"
-          title="箇条書き"
-        >
-          <List className="w-4 h-4" />
-        </Button>
-        
-        <Button
-          variant={editor.isActive('orderedList') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className="p-2"
-          title="番号付きリスト"
-        >
-          <ListOrdered className="w-4 h-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-gray-300 mx-1" />
-
-        {/* その他 */}
-        <Button
-          variant={editor.isActive('blockquote') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className="p-2"
-          title="引用"
-        >
-          <Quote className="w-4 h-4" />
-        </Button>
-        
-        <Button
-          variant={editor.isActive('code') ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => editor.chain().focus().toggleCode().run()}
-          className="p-2"
-          title="コード"
-        >
-          <Code className="w-4 h-4" />
-        </Button>
-
-        <div className="w-px h-6 bg-gray-300 mx-1" />
-
+      {/* ツールバー - なろう風シンプル版 */}
+      <div className="p-2 border-b border-gray-200 bg-gray-50 flex gap-2 items-center">
         {/* ルビ振り */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={handleAddRuby}
-          className="p-2"
-          title="ルビ振り"
-          disabled={!editor.state.selection.empty === false}
+          title="選択したテキストにルビを振る"
+          disabled={!activeEpisode}
         >
-          <span className="text-xs font-bold">ルビ</span>
+          ルビ
         </Button>
 
-        <div className="w-px h-6 bg-gray-300 mx-1" />
+        {/* 傍点 */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleAddEmphasis}
+          title="選択したテキストに傍点をつける"
+          disabled={!activeEpisode}
+        >
+          傍点
+        </Button>
 
-        {/* Undo/Redo */}
+        <div className="w-px h-6 bg-gray-300" />
+
+        {/* なろう形式エクスポート */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          onClick={() => editor.chain().focus().undo().run()}
-          className="p-2"
-          title="元に戻す"
-          disabled={!editor.can().undo()}
+          onClick={handleExportForNarou}
+          title="小説家になろう形式でダウンロード"
+          disabled={!activeEpisode}
+          className="flex items-center gap-1"
         >
-          <Undo className="w-4 h-4" />
+          <Download className="w-4 h-4" />
+          なろう形式
         </Button>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().redo().run()}
-          className="p-2"
-          title="やり直し"
-          disabled={!editor.can().redo()}
-        >
-          <Redo className="w-4 h-4" />
-        </Button>
+
+        <div className="flex-1" />
+
+        {/* 使い方の説明 */}
+        <div className="text-xs text-gray-500 hidden sm:flex items-center gap-2">
+          <span>💡 ルビ: |漢字《かんじ》 / 傍点: 《《強調》》</span>
+        </div>
       </div>
 
-      {/* エディタ */}
-      <div className="flex-1 overflow-y-auto">
-        { isMounted ? <EditorContent editor={editor} /> : <div className="p-8 text-center text-gray-500">Loading editor...</div> }
+      {/* エディタエリア */}
+      <div className="flex-1 overflow-hidden">
+        <textarea
+          ref={textareaRef}
+          value={content}
+          onChange={handleChange}
+          disabled={!activeEpisode}
+          placeholder={activeEpisode ? "本文を入力してください...\n\n改行2回で段落が分かれます。\n\nルビ: |漢字《かんじ》\n傍点: 《《強調》》" : "エピソードを選択してください..."}
+          className="w-full h-full p-8 resize-none focus:outline-none font-serif text-base leading-loose border-none disabled:bg-gray-50 disabled:text-gray-400"
+          style={{
+            fontSize: '16px',
+            lineHeight: '2',
+            fontFamily: "'Noto Serif JP', 'Yu Mincho', YuMincho, 'Hiragino Mincho ProN', 'MS PMincho', serif"
+          }}
+        />
       </div>
 
       {/* フッター */}
-      <div className="p-3 border-t border-gray-200 bg-gray-50 flex justify-end">
+      <div className="p-3 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+        <span className="text-xs text-gray-500">
+          {activeEpisode ? '自動保存中...' : ''}
+        </span>
         <span className="text-sm text-gray-600">
-          {getWordCount()} 文字
+          {getCharCount().toLocaleString()} 文字
         </span>
       </div>
 
@@ -386,11 +293,6 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">選択されたテキスト</label>
-                <div className="p-2 bg-gray-100 rounded text-sm">{selectedText}</div>
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium mb-1">ルビ</label>
                 <Input
                   value={rubyText}
@@ -402,10 +304,9 @@ export default function RichEditor({ bookId }: RichEditorProps) {
                     }
                   }}
                 />
-              </div>
-
-              <div className="text-sm text-gray-600">
-                プレビュー: <ruby>{selectedText}<rt>{rubyText}</rt></ruby>
+                <div className="text-xs text-gray-500 mt-1">
+                  形式: |漢字《かんじ》
+                </div>
               </div>
 
               <div className="flex gap-2 justify-end">
