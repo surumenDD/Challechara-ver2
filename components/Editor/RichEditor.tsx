@@ -5,13 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Download, X } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { updateEpisode } from '@/lib/api/episodes';
 
 interface RichEditorProps {
   bookId: string;
 }
 
 export default function RichEditor({ bookId }: RichEditorProps) {
-  const { books, updateProjectFile } = useStore();
+  const { books, activeEpisodeId, refreshBookFromBackend } = useStore();
   const [showRubyModal, setShowRubyModal] = useState(false);
   const [rubyText, setRubyText] = useState('');
   const [content, setContent] = useState('');
@@ -21,6 +22,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const book = books.find(b => b.id === bookId);
+  const activeEpisode = book?.episodes?.find(e => e.id === activeEpisodeId);
 
   // セキュリティ定数
   const MAX_CONTENT_LENGTH = 1000000; // 100万文字
@@ -87,18 +89,52 @@ export default function RichEditor({ bookId }: RichEditorProps) {
       .join('');
   }, []);
 
-  // アクティブファイル変更時にエディタ内容を更新
+  // アクティブエピソード変更時に内容を更新
   useEffect(() => {
-    if (editor) {
-      if (activeFile) {
-        if (editor.getHTML() !== activeFile.content) {
-          editor.commands.setContent(activeFile.content);
-        }
-      } else {
-        editor.commands.setContent('<p>ファイルを選択または作成してください...</p>');
-      }
+    if (activeEpisode) {
+      setContent(convertFromHtml(activeEpisode.content));
+    } else {
+      setContent('');
     }
-  }, [editor, activeFile?.content, activeFile?.id]);
+  }, [activeEpisode?.id, activeEpisode?.content, convertFromHtml]);
+
+  // 自動保存処理
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    
+    // 入力サイズ制限
+    if (newContent.length > MAX_CONTENT_LENGTH) {
+      alert(`文字数制限: ${MAX_CONTENT_LENGTH.toLocaleString()}文字まで`);
+      return;
+    }
+    
+    setContent(newContent);
+
+    if (activeEpisode) {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      saveTimeoutRef.current = setTimeout(async () => {
+        const htmlContent = convertToHtml(newContent);
+        try {
+          await updateEpisode(activeEpisode.id, { content: htmlContent });
+          await refreshBookFromBackend(bookId);
+        } catch (error) {
+          console.error('Failed to save episode:', error);
+        }
+      }, 1000);
+    }
+  };
+
+  // コンポーネントアンマウント時にタイムアウトをクリア
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // ルビ振り機能
   const handleAddRuby = useCallback(() => {
