@@ -4,9 +4,6 @@ import { generateDummyBooks, generateDummyMaterials } from '../utils/dummyData';
 import { isTemporaryFileId } from '../utils/backend';
 import { BookSlice, StoreSlice } from './types';
 
-const replaceFile = (files: ProjectFile[] = [], updatedFile: ProjectFile, matchId: string) =>
-  files.map((file) => (file.id === matchId ? updatedFile : file));
-
 export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
   books: [],
   activeEpisodeId: null,
