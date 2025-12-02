@@ -3,9 +3,10 @@
 import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Search, ChevronDown } from 'lucide-react';
-import { useStore, Episode } from '@/lib/store';
+import { Upload, Search } from 'lucide-react';
+import { useStore } from '@/lib/store';
 import { extractText } from '@/lib/file';
+import { createEpisode } from '@/lib/api/episodes';
 import SourceItem from './SourceItem';
 
 interface SourceManagerProps {
@@ -14,39 +15,46 @@ interface SourceManagerProps {
 
 export default function SourceManager({ bookId }: SourceManagerProps) {
   const {
-    episodes,
-    addEpisode,
-    activeSourceIds,
-    setActiveSourceIds,
-    setLeftTab
+    books,
+    setLeftTab,
+    refreshBookFromBackend
   } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'title'>('newest');
   const [dragOver, setDragOver] = useState(false);
+  const [activeSourceIds, setActiveSourceIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const bookEpisodes = episodes[bookId] || [];
+  const book = books.find(b => b.id === bookId);
+  const bookEpisodes = book?.episodes || [];
 
   // ファイルアップロード処理
   const handleFiles = useCallback(async (files: FileList) => {
+    // 既存のエピソード数を取得して連番を生成
+    const maxEpisodeNo = bookEpisodes.length > 0 
+      ? Math.max(...bookEpisodes.map(e => e.episode_no || 0))
+      : 0;
+    
+    let episodeCounter = maxEpisodeNo + 1;
+    
     for (const file of Array.from(files)) {
       if (file.type.match(/^(text\/|application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document))/)) {
         try {
           const content = await extractText(file);
-          const episode: Episode = {
-            id: `episode-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          const payload = {
             title: file.name.replace(/\.[^/.]+$/, ''),
             content,
-            createdAt: Date.now()
+            episode_no: episodeCounter++
           };
-          addEpisode(bookId, episode);
+          await createEpisode(bookId, payload);
+          await refreshBookFromBackend(bookId);
         } catch (error) {
           console.error('ファイル処理エラー:', error);
         }
       }
     }
-  }, [bookId, addEpisode]);
+  }, [bookId, bookEpisodes, refreshBookFromBackend]);
 
   // ドラッグ&ドロップ
   const handleDragOver = useCallback((e: React.DragEvent) => {
