@@ -21,36 +21,71 @@ export default function RichEditor({ bookId }: RichEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const book = books.find(b => b.id === bookId);
-  const activeFile = book?.files?.find(f => f.id === book.activeFileId);
+
+  // セキュリティ定数
+  const MAX_CONTENT_LENGTH = 1000000; // 100万文字
+  const MAX_RUBY_LENGTH = 50;
+  const MAX_SELECTION_LENGTH = 100;
   
-  const editor = useEditor({
-    immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
-      }),
-    ],
-    content: activeFile?.content || '<p>ファイルを選択または作成してください...</p>',
-    onUpdate: ({ editor }) => {
-      // アクティブファイルの内容を自動保存
-      if (activeFile) {
-        const content = editor.getHTML();
-        const updatedFile = { 
-          ...activeFile, 
-          content, 
-          updatedAt: Date.now() 
-        };
-        updateProjectFile(bookId, updatedFile);
-      }
-    },
-    editorProps: {
-      attributes: {
-        class: `prose max-w-none focus:outline-none ${!activeFile ? 'pointer-events-none opacity-50' : ''}`,
-      },
-    },
-  });
+  // HTMLエスケープ関数
+  const escapeHtml = (text: string): string => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+  
+  // HTMLアンエスケープ関数（安全版）
+  const unescapeHtml = (html: string): string => {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = html;
+    return txt.value;
+  };
+
+  // HTMLからなろう記法のプレーンテキストに変換
+  const convertFromHtml = useCallback((html: string): string => {
+    if (!html || html.length > MAX_CONTENT_LENGTH) return '';
+    
+    let text = html;
+    
+    // <ruby>タグをルビ記法に変換（長さ制限付き）
+    text = text.replace(/<ruby>([^<]{1,100})<rt>([^<]{1,50})<\/rt><\/ruby>/g, '|$1《$2》');
+    
+    // 傍点を記法に変換（長さ制限付き）
+    text = text.replace(/<em class="sesame-dot">([^<]{1,100})<\/em>/g, '《《$1》》');
+    
+    // <br>タグを改行に
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+    
+    // <p>タグを段落区切りに
+    text = text.replace(/<\/p>\s*<p>/gi, '\n\n');
+    text = text.replace(/<\/?p>/gi, '');
+    
+    // その他のHTMLタグを除去
+    text = text.replace(/<[^>]+>/g, '');
+    
+    // HTMLエンティティをデコード（安全版）
+    return unescapeHtml(text);
+  }, []);
+
+  // なろう記法のプレーンテキストをHTMLに変換
+  const convertToHtml = useCallback((text: string): string => {
+    if (!text || text.length > MAX_CONTENT_LENGTH) return '<p></p>';
+    
+    // まずHTMLエスケープ
+    let html = escapeHtml(text);
+    
+    // ルビ記法: |漢字《かんじ》 → <ruby>漢字<rt>かんじ</rt></ruby>（長さ制限付き）
+    html = html.replace(/\|([^《]{1,100})《([^》]{1,50})》/g, '<ruby>$1<rt>$2</rt></ruby>');
+    
+    // 傍点記法: 《《強調》》 → <em class="sesame-dot">強調</em>（長さ制限付き）
+    html = html.replace(/《《([^》]{1,100})》》/g, '<em class="sesame-dot">$1</em>');
+    
+    // 段落分け（改行2回）
+    const paragraphs = html.split('\n\n').slice(0, 10000); // 段落数制限
+    return paragraphs
+      .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+      .join('');
+  }, []);
 
   // アクティブファイル変更時にエディタ内容を更新
   useEffect(() => {
