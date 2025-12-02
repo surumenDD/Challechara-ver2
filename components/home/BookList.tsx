@@ -43,7 +43,7 @@ export default function BookList({ books, onBookClick, onBookAction }: BookListP
             {/* アイコン */}
             <div className="col-span-1 flex items-center">
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                {book.coverEmoji || '📖'}
+                📖
               </div>
             </div>
 
