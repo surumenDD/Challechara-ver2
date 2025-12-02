@@ -1,30 +1,6 @@
 import { Book, ProjectFile } from '@/lib/store/types';
 import { apiRequest } from './client';
 
-const toTimestamp = (value?: string) => (value ? new Date(value).getTime() : Date.now());
-
-export const mapEpisodeToProjectFile = (episode: BackendEpisode): ProjectFile => ({
-  id: String(episode.id),
-  title: episode.title,
-  content: episode.content,
-  createdAt: toTimestamp(episode.created_at),
-  updatedAt: toTimestamp(episode.updated_at)
-});
-
-const mapBookDetailToBook = (detail: BackendBookDetail): Book => {
-  const files = (detail.episodes || []).map(mapEpisodeToProjectFile);
-  return {
-    id: String(detail.id),
-    title: detail.title,
-    coverEmoji: detail.coverEmoji || '📚',
-    updatedAt: toTimestamp(detail.updated_at || detail.created_at),
-    sourceCount: files.length,
-    archived: detail.archived || false,
-    content: '',
-    files,
-    activeFileId: files.length > 0 ? files[0].id : null
-  };
-};
 
 export async function fetchBooksWithDetails(): Promise<Book[]> {
   const listResponse = await apiRequest<BackendBookListResponse>('/books');
@@ -75,32 +51,4 @@ export async function createBookRequest(title: string, coverEmoji?: string): Pro
 
 export async function deleteBookRequest(bookId: string): Promise<void> {
   await apiRequest(`/books/${bookId}`, { method: 'DELETE' });
-}
-
-export async function saveEpisodeRequest(projectId: string, fileId: string, filename: string, content: string): Promise<ProjectFile> {
-  const isNewFile = fileId.startsWith('file-');
-  const path = isNewFile ? `/books/${projectId}/episodes` : `/episodes/${fileId}`;
-  const method = isNewFile ? 'POST' : 'PUT';
-  const body = isNewFile
-    ? { title: filename, content, episode_no: Date.now() }
-    : { title: filename, content };
-
-  const data = await apiRequest<BackendEpisode>(path, {
-    method,
-    body: JSON.stringify(body)
-  });
-
-  return mapEpisodeToProjectFile(data);
-}
-
-export async function renameEpisodeRequest(fileId: string, title: string, content: string): Promise<ProjectFile> {
-  const data = await apiRequest<BackendEpisode>(`/episodes/${fileId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ title, content })
-  });
-  return mapEpisodeToProjectFile(data);
-}
-
-export async function deleteEpisodeRequest(fileId: string): Promise<void> {
-  await apiRequest(`/episodes/${fileId}`, { method: 'DELETE' });
 }
