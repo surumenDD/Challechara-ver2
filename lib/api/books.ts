@@ -47,6 +47,11 @@ export async function updateBookRequest(bookId: string, updates: Partial<Book>):
     body: JSON.stringify(updates)
   });
 }
+
+/**
+ * 書籍を削除
+ * DELETE /api/books/:id
+ */
 export async function deleteBookRequest(bookId: string): Promise<void> {
   await apiRequest(`/books/${bookId}`, { method: 'DELETE' });
 }
