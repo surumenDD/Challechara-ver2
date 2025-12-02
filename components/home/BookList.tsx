@@ -27,7 +27,7 @@ export default function BookList({ books, onBookClick, onBookAction }: BookListP
         <div className="col-span-1"></div>
         <div className="col-span-4">タイトル</div>
         <div className="col-span-2">更新日</div>
-        <div className="col-span-2">ソース数</div>
+        <div className="col-span-2">エピソード数</div>
         <div className="col-span-3"></div>
       </div>
 
@@ -57,7 +57,7 @@ export default function BookList({ books, onBookClick, onBookAction }: BookListP
               <span className="text-sm text-gray-600">{formatDate(book.updatedAt)}</span>
             </div>
 
-            {/* ソース数 */}
+            {/* エピソード数 */}
             <div className="col-span-2 flex items-center">
               <span className="text-sm text-gray-600">{book.sourceCount}個</span>
             </div>
