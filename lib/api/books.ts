@@ -1,26 +1,6 @@
 import { Book, ProjectFile } from '@/lib/store/types';
 import { apiRequest } from './client';
 
-type BackendEpisode = {
-  id: number | string;
-  title: string;
-  content: string;
-  created_at?: string;
-  updated_at?: string;
-};
-
-type BackendBookDetail = {
-  id: number | string;
-  title: string;
-  coverEmoji?: string;
-  archived?: boolean;
-  created_at?: string;
-  updated_at?: string;
-  episodes?: BackendEpisode[];
-};
-
-type BackendBookListResponse = BackendBookDetail[] | { books: BackendBookDetail[] };
-
 const toTimestamp = (value?: string) => (value ? new Date(value).getTime() : Date.now());
 
 export const mapEpisodeToProjectFile = (episode: BackendEpisode): ProjectFile => ({
