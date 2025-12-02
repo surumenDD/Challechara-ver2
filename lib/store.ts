@@ -15,6 +15,7 @@ const partialize = (state: AppStore) => ({
   dictChats: state.dictChats,
   sortOrder: state.sortOrder,
   viewMode: state.viewMode,
+  query: state.query,
   ui: state.ui
 });
 
