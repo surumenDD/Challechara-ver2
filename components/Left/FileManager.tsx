@@ -71,53 +71,31 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
     }
   }, [bookId, episodes, refreshBookFromBackend]);
 
-  // 新規ファイル作成
+  // 新規エピソード作成
   const handleCreateNewFile = useCallback(async () => {
     if (!newFileName.trim()) return;
     
-    const fileName = newFileName.trim().endsWith('.txt') 
-      ? newFileName.trim() 
-      : `${newFileName.trim()}.txt`;
-
-    // サーバーに送る Episode データ
+    const maxEpisodeNo = episodes.length > 0 
+      ? Math.max(...episodes.map(e => e.episode_no || 0))
+      : 0;
+    
+    const title = newFileName.trim().replace('.txt', '');
     const payload = {
-      title: fileName.replace('.txt', ''), // タイトルは拡張子なしで
-      content: `# ${fileName.replace('.txt', '')}\n\n`
+      title,
+      content: `# ${title}\n\n`,
+      episode_no: maxEpisodeNo + 1
     };
 
     try {
-      // --- API呼び出し ---
-      const res = await fetch(`http://localhost:8080/api/books/${bookId}/episodes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        console.error("Failed to create episode");
-        return;
-      }
-
-      const createdEpisode = await res.json();
-
-      // --- ローカル state 更新 ---
-      const projectFile: ProjectFile = {
-        id: String(createdEpisode.id),
-        title: fileName,
-        content: createdEpisode.content,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-      };
-
-      addProjectFile(bookId, projectFile);
-      setActiveFile(bookId, projectFile.id);
+      const createdEpisode = await createEpisode(bookId, payload);
+      await refreshBookFromBackend(bookId);
+      setActiveEpisodeId(createdEpisode.id);
       setShowNewFileDialog(false);
       setNewFileName('');
-
     } catch (err) {
-      console.error(err);
+      console.error('エピソード作成エラー:', err);
     }
-  }, [newFileName, bookId, addProjectFile, setActiveFile]);
+  }, [newFileName, bookId, createEpisode, refreshBookFromBackend, setActiveEpisodeId]);
 
   const handleDeleteFile = async (fileId: string) => {
     const targetFile = files.find(f => f.id === fileId);
