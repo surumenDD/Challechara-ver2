@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, BookOpen } from 'lucide-react';
-import { useStore, Book, ProjectFile } from '@/lib/store';
+import { useStore } from '@/lib/store';
 import { exportAsTxt } from '@/lib/file';
 import Header from '@/components/Header';
 import Toolbar from '@/components/home/Toolbar';
@@ -20,11 +20,9 @@ export default function HomePage() {
     viewMode,
     sortOrder,
     query,
-    addBook,
     createBook,
     updateBook,
     deleteBook,
-    duplicateBook,
     initializeBooks
   } = useStore();
 
@@ -106,10 +104,6 @@ export default function HomePage() {
         if (newTitle && newTitle.trim() !== book.title) {
           updateBook({ ...book, title: newTitle.trim(), updatedAt: Date.now() });
         }
-        break;
-
-      case 'duplicate':
-        duplicateBook(bookId);
         break;
 
       case 'export':
