@@ -9,25 +9,6 @@ export type UiSlice = {
   setRightPanelOpen: (open: boolean) => void;
 };
 
-export type SourceSlice = {
-  episodes: Record<string, Episode[]>;
-  activeSourceIds: string[];
-  setActiveSourceIds: (ids: string[]) => void;
-  addEpisode: (bookId: string, episode: Episode) => void;
-  updateEpisode: (bookId: string, episode: Episode) => void;
-  deleteEpisode: (bookId: string, episodeId: string) => void;
-};
-
-export type MaterialSlice = {
-  materials: Record<string, Material[]>;
-  activeMaterialIds: string[];
-  setActiveMaterialIds: (ids: string[]) => void;
-  addMaterial: (bookId: string, material: Material) => void;
-  addMaterialFromFile: (bookId: string, file: File) => Promise<void>;
-  loadMaterialsFromBackend: (bookId: string) => Promise<void>;
-  deleteMaterial: (bookId: string, materialId: string) => void;
-};
-
 export type ChatSlice = {
   sourceChats: Record<string, ChatMessage[]>;
   materialChats: Record<string, ChatMessage[]>;
@@ -35,12 +16,6 @@ export type ChatSlice = {
   addSourceChatMessage: (bookId: string, message: ChatMessage) => void;
   addMaterialChatMessage: (bookId: string, message: ChatMessage) => void;
   addDictChatMessage: (bookId: string, message: ChatMessage) => void;
-};
-
-export type EditorSlice = {
-  currentBookId: string | null;
-  setCurrentBookId: (bookId: string | null) => void;
-  saveBook: (bookId: string, title: string, content: string) => void;
 };
 
 export type BookSlice = {
