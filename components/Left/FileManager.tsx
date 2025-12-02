@@ -149,16 +149,16 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
   }, [handleFiles]);
 
   // フィルタリング・ソート
-  const filteredAndSortedFiles = files
-    .filter(file => 
-      file.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredAndSortedEpisodes = episodes
+    .filter((episode: Episode) => 
+      episode.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
-    .sort((a, b) => {
+    .sort((a: Episode, b: Episode) => {
       switch (sortOrder) {
         case 'newest':
-          return b.updatedAt - a.updatedAt;
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
         case 'oldest':
-          return a.updatedAt - b.updatedAt;
+          return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
         case 'title':
           return a.title.localeCompare(b.title);
         default:
