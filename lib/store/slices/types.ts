@@ -33,14 +33,14 @@ export type BookSlice = {
   setSelectedEpisodeIds: (ids: string[]) => void;
   setSelectedMaterialIds: (ids: string[]) => void;
   addBook: (book: Book) => void;
-  createBook: (title: string, coverEmoji?: string) => Promise<Book>;
+  createBook: (title: string, description?: string) => Promise<Book>;
   loadBooksFromBackend: () => Promise<void>;
   refreshBookFromBackend: (bookId: string) => Promise<void>;
-  updateBook: (book: Book) => void;
+  updateBook: (bookId: string, updates: Partial<Book>) => Promise<void>;
   deleteBook: (bookId: string) => Promise<void>;
   initializeBooks: () => void;
 };
 
-export type AppStore = UiSlice & SourceSlice & MaterialSlice & ChatSlice & BookSlice & EditorSlice;
+export type AppStore = UiSlice & ChatSlice & BookSlice;
 
 export type StoreSlice<T> = StateCreator<AppStore, [], [], T>;
