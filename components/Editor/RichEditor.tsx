@@ -80,16 +80,20 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
   // ルビ振り機能
   const handleAddRuby = useCallback(() => {
-    if (!editor) return;
+    if (!textareaRef.current || !activeEpisode) return;
 
-    const { from, to } = editor.state.selection;
-    const text = editor.state.doc.textBetween(from, to);
+    const start = textareaRef.current.selectionStart;
+    const end = textareaRef.current.selectionEnd;
+    const selectedText = content.substring(start, end);
     
-    if (text) {
-      setSelectedText(text);
+    if (selectedText && selectedText.trim()) {
+      setSelectionStart(start);
+      setSelectionEnd(end);
       setShowRubyModal(true);
+    } else {
+      alert('ルビを振りたい文字を選択してください');
     }
-  }, [editor]);
+  }, [content, activeEpisode]);
 
   const applyRuby = useCallback(() => {
     if (!editor || !selectedText || !rubyText) return;
