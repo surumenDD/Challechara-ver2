@@ -267,7 +267,7 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
               または<span className="text-blue-600">クリックして選択</span>
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              PDF, TXT, MD, DOCX対応
+              TXT, MD対応
             </p>
           </div>
         </div>
@@ -276,7 +276,7 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".pdf,.txt,.md,.docx"
+          accept=".txt,.md,.markdown"
           onChange={handleFileSelect}
           className="hidden"
         />
