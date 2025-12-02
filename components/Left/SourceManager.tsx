@@ -84,9 +84,9 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
     .sort((a, b) => {
       switch (sortOrder) {
         case 'newest':
-          return b.createdAt - a.createdAt;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         case 'oldest':
-          return a.createdAt - b.createdAt;
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
         case 'title':
           return a.title.localeCompare(b.title);
         default:

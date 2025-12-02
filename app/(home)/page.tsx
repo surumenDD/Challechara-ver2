@@ -43,19 +43,16 @@ export default function HomePage() {
   // フィルタリング・ソート
   const filteredAndSortedBooks = books
     .filter(book =>
-      !book.archived &&
       book.title.toLowerCase().includes(query.toLowerCase())
     )
     .sort((a, b) => {
       switch (sortOrder) {
         case 'newest':
-          return b.updatedAt - a.updatedAt;
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
         case 'oldest':
-          return a.updatedAt - b.updatedAt;
-        case 'titleAsc':
+          return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+        case 'a-z':
           return a.title.localeCompare(b.title);
-        case 'titleDesc':
-          return b.title.localeCompare(a.title);
         default:
           return 0;
       }
