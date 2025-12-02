@@ -11,10 +11,12 @@ export async function fetchBooksWithDetails(): Promise<Book[]> {
   return apiRequest<Book[]>('/books');
 }
 
-
+/**
+ * 特定の書籍を取得（Episodes, Materialsを含む）
+ * GET /api/books/:id
+ */
 export async function fetchBookDetail(bookId: string): Promise<Book> {
-  const detail = await apiRequest<BackendBookDetail>(`/books/${bookId}`);
-  return mapBookDetailToBook(detail);
+  return apiRequest<Book>(`/books/${bookId}`);
 }
 
 export async function createBookRequest(title: string, coverEmoji?: string): Promise<Book> {
