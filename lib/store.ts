@@ -7,8 +7,9 @@ import { createBookSlice } from './store/slices/bookSlice';
 
 const partialize = (state: AppStore) => ({
   books: state.books,
-  episodes: state.episodes,
-  materials: state.materials,
+  activeEpisodeId: state.activeEpisodeId,
+  selectedEpisodeIds: state.selectedEpisodeIds,
+  selectedMaterialIds: state.selectedMaterialIds,
   sourceChats: state.sourceChats,
   materialChats: state.materialChats,
   dictChats: state.dictChats,

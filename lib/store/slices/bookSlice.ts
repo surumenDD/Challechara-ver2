@@ -9,12 +9,20 @@ const replaceFile = (files: ProjectFile[] = [], updatedFile: ProjectFile, matchI
 
 export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
   books: [],
+  activeEpisodeId: null,
+  selectedEpisodeIds: [],
+  selectedMaterialIds: [],
   sortOrder: 'newest',
   viewMode: 'grid',
   query: '',
   setSortOrder: (order) => set({ sortOrder: order }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setQuery: (query) => set({ query }),
+  
+  setActiveEpisodeId: (episodeId) => set({ activeEpisodeId: episodeId }),
+  setSelectedEpisodeIds: (ids) => set({ selectedEpisodeIds: ids }),
+  setSelectedMaterialIds: (ids) => set({ selectedMaterialIds: ids }),
+
   addBook: (book) => set((state) => ({ books: [...state.books, book] })),
   addProjectFile: (bookId, file) => set((state) => ({
     books: state.books.map((book) =>

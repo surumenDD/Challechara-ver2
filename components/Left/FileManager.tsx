@@ -14,12 +14,11 @@ interface FileManagerProps {
 
 export default function FileManager({ bookId, book }: FileManagerProps) {
   const {
-    addProjectFile,
-    updateProjectFile,
-    deleteProjectFile,
-    setActiveFile,
-    activeSourceIds,
-    setActiveSourceIds,
+    activeEpisodeId,
+    setActiveEpisodeId,
+    selectedEpisodeIds,
+    setSelectedEpisodeIds,
+    refreshBookFromBackend,
     setLeftTab
   } = useStore();
 
