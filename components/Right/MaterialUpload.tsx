@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, X } from 'lucide-react';
+import { Upload, Trash2 } from 'lucide-react';
 import { useStore, Material } from '@/lib/store';
-import { extractText, formatFileSize, formatRelativeTime } from '@/lib/file';
+import { extractText } from '@/lib/file';
 import ChipList from '../Common/ChipList';
 
 interface MaterialUploadProps {
@@ -22,9 +22,10 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const bookMaterials = materials[bookId] || [];
+  const book = books.find(b => b.id === bookId);
+  const bookMaterials = book?.materials || [];
   const selectedMaterials = bookMaterials.filter(material =>
-    activeMaterialIds.includes(material.id)
+    selectedMaterialIds.includes(material.id)
   );
 
   // ファイルアップロード処理
