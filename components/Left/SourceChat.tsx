@@ -13,19 +13,19 @@ interface SourceChatProps {
 export default function SourceChat({ bookId }: SourceChatProps) {
   const {
     books,
-    activeSourceIds,
+    selectedEpisodeIds,
+    setSelectedEpisodeIds,
     sourceChats,
-    addSourceChatMessage,
-    setActiveSourceIds
+    addSourceChatMessage
   } = useStore();
 
   const book = books.find(b => b.id === bookId);
-  const projectFiles = book?.files || [];
+  const episodes = book?.episodes || [];
   const chatMessages = sourceChats[bookId] || [];
 
-  // 選択されたファイルの情報
-  const selectedFiles = projectFiles.filter(file =>
-    activeSourceIds.includes(file.id)
+  // 選択されたエピソードの情報
+  const selectedEpisodes = episodes.filter(episode =>
+    selectedEpisodeIds.includes(episode.id)
   );
 
   // メッセージ送信
@@ -40,8 +40,8 @@ export default function SourceChat({ bookId }: SourceChatProps) {
     addSourceChatMessage(bookId, userMessage);
 
     try {
-      // AIレスポンスを取得（選択されたファイルの内容をコンテキストとして使用）
-      const sources = [`project:${bookId}:${selectedFiles.map(f => f.title).join(',')}`];
+      // AIレスポンスを取得（選択されたエピソードの内容をコンテキストとして使用）
+      const sources = [`project:${bookId}:${selectedEpisodes.map(e => e.title).join(',')}`];
       const response = await chatProvider.send([...chatMessages, userMessage], {
         sources,
         chatType: 'project'
@@ -61,36 +61,36 @@ export default function SourceChat({ bookId }: SourceChatProps) {
 
   // チップ削除
   const handleRemoveSource = (sourceId: string) => {
-    const newSelection = activeSourceIds.filter(id => id !== sourceId);
-    setActiveSourceIds(newSelection);
+    const newSelection = selectedEpisodeIds.filter(id => id !== sourceId);
+    setSelectedEpisodeIds(newSelection);
   };
 
   return (
     <div className="h-full flex flex-col">
       {/* ヘッダー */}
       <div className="p-4 border-b border-gray-200">
-        <h2 className="font-semibold text-lg mb-3">プロジェクトチャット</h2>
+        <h2 className="font-semibold text-lg mb-3">エピソードチャット</h2>
 
-        {/* 使用中ファイルチップ */}
+        {/* 使用中エピソードチップ */}
         <ChipList
-          items={selectedFiles.slice(0, 5).map(file => ({
-            id: file.id,
-            label: file.title
+          items={selectedEpisodes.slice(0, 5).map(episode => ({
+            id: episode.id,
+            label: episode.title
           }))}
-          extraCount={selectedFiles.length > 5 ? selectedFiles.length - 5 : 0}
+          extraCount={selectedEpisodes.length > 5 ? selectedEpisodes.length - 5 : 0}
           onRemove={handleRemoveSource}
           maxWidth="100%"
         />
 
-        {selectedFiles.length === 0 && (
+        {selectedEpisodes.length === 0 && (
           <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
-            ファイルが選択されていません。「ファイル管理」タブで選択してください。
+            エピソードが選択されていません。「ファイル管理」タブで選択してください。
           </div>
         )}
 
-        {selectedFiles.length > 0 && (
+        {selectedEpisodes.length > 0 && (
           <div className="text-xs text-gray-500 mt-2">
-            選択中のファイル内容を参考にして回答します
+            選択中のエピソード内容を参考にして回答します
           </div>
         )}
       </div>
@@ -100,8 +100,8 @@ export default function SourceChat({ bookId }: SourceChatProps) {
         <ChatWindow messages={chatMessages} />
         <Composer
           onSend={handleSendMessage}
-          disabled={selectedFiles.length === 0}
-          placeholder="プロジェクト内のファイルについて質問する..."
+          disabled={selectedEpisodes.length === 0}
+          placeholder="エピソードについて質問する..."
         />
       </div>
     </div>

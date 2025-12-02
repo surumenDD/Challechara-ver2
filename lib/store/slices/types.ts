@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { Book, ChatMessage, Episode, Material, ProjectFile, UIState } from '../types';
+import { Book, ChatMessage, UIState } from '../types';
 
 export type UiSlice = {
   ui: UIState;
@@ -7,25 +7,6 @@ export type UiSlice = {
   setRightTab: (tab: 'dict' | 'material') => void;
   setRightSubTab: (tab: 'upload' | 'chat') => void;
   setRightPanelOpen: (open: boolean) => void;
-};
-
-export type SourceSlice = {
-  episodes: Record<string, Episode[]>;
-  activeSourceIds: string[];
-  setActiveSourceIds: (ids: string[]) => void;
-  addEpisode: (bookId: string, episode: Episode) => void;
-  updateEpisode: (bookId: string, episode: Episode) => void;
-  deleteEpisode: (bookId: string, episodeId: string) => void;
-};
-
-export type MaterialSlice = {
-  materials: Record<string, Material[]>;
-  activeMaterialIds: string[];
-  setActiveMaterialIds: (ids: string[]) => void;
-  addMaterial: (bookId: string, material: Material) => void;
-  addMaterialFromFile: (bookId: string, file: File) => Promise<void>;
-  loadMaterialsFromBackend: (bookId: string) => Promise<void>;
-  deleteMaterial: (bookId: string, materialId: string) => void;
 };
 
 export type ChatSlice = {
@@ -37,36 +18,29 @@ export type ChatSlice = {
   addDictChatMessage: (bookId: string, message: ChatMessage) => void;
 };
 
-export type EditorSlice = {
-  currentBookId: string | null;
-  setCurrentBookId: (bookId: string | null) => void;
-  saveBook: (bookId: string, title: string, content: string) => void;
-};
-
 export type BookSlice = {
   books: Book[];
-  sortOrder: 'newest' | 'oldest' | 'titleAsc' | 'titleDesc';
+  activeEpisodeId: string | null;
+  selectedEpisodeIds: string[];
+  selectedMaterialIds: string[];
+  sortOrder: 'newest' | 'oldest' | 'a-z';
   viewMode: 'grid' | 'list';
   query: string;
-  setSortOrder: (order: 'newest' | 'oldest' | 'titleAsc' | 'titleDesc') => void;
+  setSortOrder: (order: 'newest' | 'oldest' | 'a-z') => void;
   setViewMode: (mode: 'grid' | 'list') => void;
   setQuery: (query: string) => void;
+  setActiveEpisodeId: (episodeId: string | null) => void;
+  setSelectedEpisodeIds: (ids: string[]) => void;
+  setSelectedMaterialIds: (ids: string[]) => void;
   addBook: (book: Book) => void;
-  createBook: (title: string, coverEmoji?: string) => Promise<Book>;
+  createBook: (title: string, description?: string) => Promise<Book>;
   loadBooksFromBackend: () => Promise<void>;
   refreshBookFromBackend: (bookId: string) => Promise<void>;
-  saveProjectFile: (projectId: string, fileId: string, filename: string, content: string) => Promise<ProjectFile | undefined>;
-  updateBook: (book: Book) => void;
+  updateBook: (bookId: string, updates: Partial<Book>) => Promise<void>;
   deleteBook: (bookId: string) => Promise<void>;
-  duplicateBook: (bookId: string) => void;
   initializeBooks: () => void;
-  addProjectFile: (bookId: string, file: ProjectFile) => void;
-  updateProjectFile: (bookId: string, file: ProjectFile) => Promise<void>;
-  renameProjectFile: (bookId: string, fileId: string, oldTitle: string, newTitle: string) => Promise<void>;
-  deleteProjectFile: (bookId: string, fileId: string) => Promise<void>;
-  setActiveFile: (bookId: string, fileId: string | null) => void;
 };
 
-export type AppStore = UiSlice & SourceSlice & MaterialSlice & ChatSlice & BookSlice & EditorSlice;
+export type AppStore = UiSlice & ChatSlice & BookSlice;
 
 export type StoreSlice<T> = StateCreator<AppStore, [], [], T>;

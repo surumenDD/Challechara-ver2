@@ -1,156 +1,46 @@
-import { deleteBookRequest, deleteEpisodeRequest, fetchBookDetail, fetchBooksWithDetails, renameEpisodeRequest, saveEpisodeRequest, createBookRequest } from '@/lib/api/books';
-import { Book, ProjectFile } from '../types';
-import { generateDummyBooks, generateDummyMaterials } from '../utils/dummyData';
-import { isTemporaryFileId } from '../utils/backend';
+import { createBookRequest, deleteBookRequest, fetchBookDetail, fetchBooksWithDetails, updateBookRequest } from '@/lib/api/books';
 import { BookSlice, StoreSlice } from './types';
-
-const replaceFile = (files: ProjectFile[] = [], updatedFile: ProjectFile, matchId: string) =>
-  files.map((file) => (file.id === matchId ? updatedFile : file));
 
 export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
   books: [],
+  activeEpisodeId: null,
+  selectedEpisodeIds: [],
+  selectedMaterialIds: [],
   sortOrder: 'newest',
   viewMode: 'grid',
   query: '',
+
   setSortOrder: (order) => set({ sortOrder: order }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setQuery: (query) => set({ query }),
+  
+  setActiveEpisodeId: (episodeId) => set({ activeEpisodeId: episodeId }),
+  setSelectedEpisodeIds: (ids) => set({ selectedEpisodeIds: ids }),
+  setSelectedMaterialIds: (ids) => set({ selectedMaterialIds: ids }),
+
   addBook: (book) => set((state) => ({ books: [...state.books, book] })),
-  addProjectFile: (bookId, file) => set((state) => ({
-    books: state.books.map((book) =>
-      book.id === bookId
-        ? {
-          ...book,
-          files: [...(book.files || []), file],
-          activeFileId: book.activeFileId || file.id,
-          updatedAt: Date.now()
-        }
-        : book
-    )
-  })),
-  updateProjectFile: async (bookId, file) => {
-    set((state) => ({
-      books: state.books.map((book) =>
-        book.id === bookId
-          ? {
-            ...book,
-            files: (book.files || []).map((f) => (f.id === file.id ? file : f)),
-            updatedAt: Date.now()
-          }
-          : book
-      )
-    }));
 
+  createBook: async (title, description) => {
     try {
-      await get().saveProjectFile(bookId, file.id, file.title, file.content);
-    } catch (error) {
-      console.error('Failed to save project file:', error);
-    }
-  },
-  renameProjectFile: async (bookId, fileId, oldTitle, newTitle) => {
-    if (!newTitle || oldTitle === newTitle) {
-      return;
-    }
-
-    const book = get().books.find((b) => b.id === bookId);
-    const file = book?.files?.find((f) => f.id === fileId);
-    if (!file) {
-      throw new Error('File not found');
-    }
-
-    if (isTemporaryFileId(fileId)) {
-      set((state) => ({
-        books: state.books.map((b) =>
-          b.id === bookId
-            ? {
-              ...b,
-              files: (b.files || []).map((f) => (f.id === fileId ? { ...f, title: newTitle, updatedAt: Date.now() } : f))
-            }
-            : b
-        )
-      }));
-      return;
-    }
-
-    try {
-      const updatedFile = await renameEpisodeRequest(fileId, newTitle, file.content);
-      set((state) => ({
-        books: state.books.map((b) =>
-          b.id === bookId
-            ? {
-              ...b,
-              files: replaceFile(b.files, updatedFile, fileId)
-            }
-            : b
-        )
-      }));
-    } catch (error) {
-      console.error('Failed to rename project file:', error);
-      throw error;
-    }
-  },
-  deleteProjectFile: async (bookId, fileId) => {
-    set((state) => ({
-      books: state.books.map((book) =>
-        book.id === bookId
-          ? {
-            ...book,
-            files: (book.files || []).filter((file) => file.id !== fileId),
-            activeFileId:
-              book.activeFileId === fileId
-                ? (book.files || []).find((file) => file.id !== fileId)?.id || null
-                : book.activeFileId,
-            updatedAt: Date.now()
-          }
-          : book
-      )
-    }));
-
-    if (isTemporaryFileId(fileId)) {
-      return;
-    }
-
-    try {
-      await deleteEpisodeRequest(fileId);
-    } catch (error) {
-      console.error('Failed to delete project file:', error);
-    }
-  },
-  setActiveFile: (bookId, fileId) => set((state) => ({
-    books: state.books.map((book) =>
-      book.id === bookId ? { ...book, activeFileId: fileId, updatedAt: Date.now() } : book
-    )
-  })),
-  createBook: async (title, coverEmoji) => {
-    try {
-      const newBook = await createBookRequest(title, coverEmoji);
+      const newBook = await createBookRequest(title, description);
       set((state) => ({ books: [...state.books, newBook] }));
       return newBook;
     } catch (error) {
       console.error('Error creating book:', error);
-      const fallbackBook: Book = {
-        id: `book-${Date.now()}`,
-        title,
-        coverEmoji: coverEmoji || '📚',
-        updatedAt: Date.now(),
-        sourceCount: 0,
-        archived: false,
-        content: '',
-        files: [],
-        activeFileId: null
-      };
-      set((state) => ({ books: [...state.books, fallbackBook] }));
-      return fallbackBook;
+      throw error;
     }
   },
+
   loadBooksFromBackend: async () => {
     try {
       const books = await fetchBooksWithDetails();
       set({ books });
     } catch (error) {
       console.error('Error loading books from backend:', error);
+      throw error;
     }
   },
+
   refreshBookFromBackend: async (bookId) => {
     try {
       const updatedBook = await fetchBookDetail(bookId);
@@ -159,52 +49,32 @@ export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
       }));
     } catch (error) {
       console.error('Error refreshing book from backend:', error);
-    }
-  },
-  saveProjectFile: async (projectId, fileId, filename, content) => {
-    try {
-      const savedFile = await saveEpisodeRequest(projectId, fileId, filename, content);
-      set((state) => ({
-        books: state.books.map((book) =>
-          book.id === projectId
-            ? {
-              ...book,
-              files: (book.files || []).map((file) => (file.id === fileId ? savedFile : file)),
-              sourceCount: (book.files || []).length,
-              activeFileId: savedFile.id,
-              updatedAt: Date.now()
-            }
-            : book
-        )
-      }));
-      return savedFile;
-    } catch (error) {
-      console.error('Failed to save project file:', error);
       throw error;
     }
   },
-  updateBook: (book) => set((state) => ({
-    books: state.books.map((b) => (b.id === book.id ? { ...book, updatedAt: Date.now() } : b))
-  })),
-  deleteBook: async (bookId) => {
-    set((state) => ({ books: state.books.filter((book) => book.id !== bookId) }));
+
+  updateBook: async (bookId, updates) => {
     try {
-      await deleteBookRequest(bookId);
+      const updatedBook = await updateBookRequest(bookId, updates);
+      set((state) => ({
+        books: state.books.map((b) => (b.id === bookId ? updatedBook : b))
+      }));
     } catch (error) {
-      console.error('Failed to delete book from backend:', error);
+      console.error('Error updating book:', error);
+      throw error;
     }
   },
-  duplicateBook: (bookId) => set((state) => {
-    const book = state.books.find((b) => b.id === bookId);
-    if (!book) return state;
-    const newBook: Book = {
-      ...book,
-      id: `book-${Date.now()}`,
-      title: `${book.title}のコピー`,
-      updatedAt: Date.now()
-    };
-    return { books: [...state.books, newBook] };
-  }),
+
+  deleteBook: async (bookId) => {
+    try {
+      await deleteBookRequest(bookId);
+      set((state) => ({ books: state.books.filter((book) => book.id !== bookId) }));
+    } catch (error) {
+      console.error('Failed to delete book from backend:', error);
+      throw error;
+    }
+  },
+
   initializeBooks: () => {
     const { loadBooksFromBackend } = get();
     loadBooksFromBackend()
@@ -212,46 +82,7 @@ export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
         console.log('Books loaded from backend successfully');
       })
       .catch((error) => {
-        console.error('Failed to load from backend, using fallback:', error);
-        set((state) => {
-          if (state.books.length === 0) {
-            return {
-              books: generateDummyBooks(),
-              materials: generateDummyMaterials()
-            };
-          }
-          return state;
-        });
+        console.error('Failed to load from backend:', error);
       });
-
-    set((state) => {
-      let needsMigration = false;
-      const migratedBooks = state.books.map((book) => {
-        if (!book.files && book.content) {
-          needsMigration = true;
-          const plainText = book.content.replace(/<[^>]*>/g, '');
-          const mainFile: ProjectFile = {
-            id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-            title: `${book.title}.txt`,
-            content: plainText,
-            createdAt: book.updatedAt || Date.now(),
-            updatedAt: book.updatedAt || Date.now()
-          };
-          return {
-            ...book,
-            files: [mainFile],
-            activeFileId: mainFile.id
-          };
-        }
-        return book;
-      });
-
-      if (needsMigration) {
-        console.log('Migrated books to new file structure');
-        return { books: migratedBooks };
-      }
-
-      return state;
-    });
   }
 });

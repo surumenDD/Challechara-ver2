@@ -4,7 +4,8 @@ import { useState, useCallback } from 'react';
 import { MoreVertical, Download, Trash2 } from 'lucide-react';
 import { Episode } from '@/lib/store';
 import { useStore } from '@/lib/store';
-import { exportAsTxt, formatRelativeTime } from '@/lib/file';
+import { exportAsTxt } from '@/lib/file';
+import { deleteEpisode } from '@/lib/api/episodes';
 
 interface SourceItemProps {
   episode: Episode;
@@ -14,7 +15,7 @@ interface SourceItemProps {
 }
 
 export default function SourceItem({ episode, bookId, isSelected, onToggleSelect }: SourceItemProps) {
-  const { deleteEpisode } = useStore();
+  const { refreshBookFromBackend } = useStore();
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
 
@@ -39,12 +40,17 @@ export default function SourceItem({ episode, bookId, isSelected, onToggleSelect
   }, [episode.title, episode.content]);
 
   // 削除
-  const handleDelete = useCallback(() => {
-    if (confirm('このソースを削除しますか？')) {
-      deleteEpisode(bookId, episode.id);
+  const handleDelete = useCallback(async () => {
+    if (confirm('このエピソードを削除しますか？')) {
+      try {
+        await deleteEpisode(episode.id);
+        await refreshBookFromBackend(bookId);
+      } catch (error) {
+        console.error('Failed to delete episode:', error);
+      }
     }
     setShowContextMenu(false);
-  }, [deleteEpisode, bookId, episode.id]);
+  }, [episode.id, bookId, refreshBookFromBackend]);
 
   // ESCキーでメニューを閉じる
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -83,7 +89,7 @@ export default function SourceItem({ episode, bookId, isSelected, onToggleSelect
               {episode.content.substring(0, 100)}...
             </p>
             <div className="text-xs text-gray-500">
-              {formatRelativeTime(episode.createdAt)}
+              {new Date(episode.created_at).toLocaleDateString()}
             </div>
           </div>
 

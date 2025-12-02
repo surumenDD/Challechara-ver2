@@ -7,7 +7,6 @@ import { Menu, X } from 'lucide-react';
 import { useStore } from '@/lib/store';
 import Header from '@/components/Header';
 import Panels from '@/components/Panels';
-import SourceManager from '@/components/Left/SourceManager';
 import FileManager from '@/components/Left/FileManager';
 import SourceChat from '@/components/Left/SourceChat';
 import TitleBar from '@/components/Editor/TitleBar';
@@ -27,7 +26,6 @@ export default function EditorPage() {
     setRightTab, 
     setRightSubTab,
     setRightPanelOpen,
-    setCurrentBookId,
     initializeBooks
   } = useStore();
 
@@ -38,7 +36,6 @@ export default function EditorPage() {
   useEffect(() => {
     console.log('Editor page loaded for book:', bookId);
     console.log('Available books:', books.map(b => b.id));
-    setCurrentBookId(bookId);
     
     const checkScreenSize = () => {
       const width = window.innerWidth;
@@ -48,7 +45,7 @@ export default function EditorPage() {
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, [bookId, setCurrentBookId]);
+  }, [bookId]);
 
   // ブックが見つからない場合、ダミーブックを生成
   useEffect(() => {

@@ -27,7 +27,7 @@ export default function BookList({ books, onBookClick, onBookAction }: BookListP
         <div className="col-span-1"></div>
         <div className="col-span-4">タイトル</div>
         <div className="col-span-2">更新日</div>
-        <div className="col-span-2">ソース数</div>
+        <div className="col-span-2">エピソード数</div>
         <div className="col-span-3"></div>
       </div>
 
@@ -43,7 +43,7 @@ export default function BookList({ books, onBookClick, onBookAction }: BookListP
             {/* アイコン */}
             <div className="col-span-1 flex items-center">
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                {book.coverEmoji || '📖'}
+                📖
               </div>
             </div>
 
@@ -54,12 +54,12 @@ export default function BookList({ books, onBookClick, onBookAction }: BookListP
 
             {/* 更新日 */}
             <div className="col-span-2 flex items-center">
-              <span className="text-sm text-gray-600">{formatDate(book.updatedAt)}</span>
+              <span className="text-sm text-gray-600">{new Date(book.updated_at).toLocaleDateString()}</span>
             </div>
 
-            {/* ソース数 */}
+            {/* エピソード数 */}
             <div className="col-span-2 flex items-center">
-              <span className="text-sm text-gray-600">{book.sourceCount}個</span>
+              <span className="text-sm text-gray-600">{book.episodes?.length || 0}個</span>
             </div>
 
             {/* メニュー */}
