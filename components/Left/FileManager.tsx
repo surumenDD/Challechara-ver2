@@ -182,13 +182,13 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
   }, [activeSourceIds, setActiveSourceIds]);
 
   const handleSelectAll = useCallback(() => {
-    const allIds = filteredAndSortedFiles.map(f => f.id);
-    setActiveSourceIds(allIds);
-  }, [filteredAndSortedFiles, setActiveSourceIds]);
+    const allIds = filteredAndSortedEpisodes.map((e: Episode) => e.id);
+    setSelectedEpisodeIds(allIds);
+  }, [filteredAndSortedEpisodes]);
 
   const handleSelectNone = useCallback(() => {
-    setActiveSourceIds([]);
-  }, [setActiveSourceIds]);
+    setSelectedEpisodeIds([]);
+  }, []);
 
   // チャット実行
   const handleStartChat = useCallback(() => {
@@ -303,7 +303,7 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
               variant="ghost"
               size="sm"
               onClick={handleSelectAll}
-              disabled={files.length === 0}
+              disabled={episodes.length === 0}
             >
               全選択
             </Button>
@@ -311,7 +311,7 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
               variant="ghost"
               size="sm"
               onClick={handleSelectNone}
-              disabled={activeSourceIds.length === 0}
+              disabled={selectedEpisodeIds.length === 0}
             >
               解除
             </Button>
@@ -319,45 +319,43 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
         </div>
       </div>
 
-      {/* ファイル一覧 */}
+      {/* エピソード一覧 */}
       <div className="flex-1 overflow-y-auto">
-        {filteredAndSortedFiles.length === 0 ? (
+        {filteredAndSortedEpisodes.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
-            <p>ファイルがありません</p>
+            <p>エピソードがありません</p>
             <p className="text-sm mt-1">新規作成またはアップロードしてください</p>
           </div>
         ) : (
           <div className="p-2">
-            {filteredAndSortedFiles.map((file) => (
+            {filteredAndSortedEpisodes.map((episode: Episode) => (
               <div
-                key={file.id}
+                key={episode.id}
                 className={`file-item p-3 mb-2 rounded border cursor-pointer transition-colors ${
-                  activeFileId === file.id 
+                  activeEpisodeId === episode.id 
                     ? 'border-blue-500 bg-blue-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
+                onClick={() => handleEpisodeClick(episode.id)}
               >
                 <div className="flex items-start gap-3">
                   <input
                     type="checkbox"
-                    checked={activeSourceIds.includes(file.id)}
-                    onChange={() => handleToggleSelect(file.id)}
+                    checked={selectedEpisodeIds.includes(episode.id)}
+                    onChange={() => handleToggleSelect(episode.id)}
                     className="mt-1"
                     onClick={(e) => e.stopPropagation()}
                   />
                   
                   <FileText className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" />
                   
-                  <div 
-                    className="flex-1 min-w-0"
-                    onClick={() => handleFileClick(file.id)}
-                  >
-                    <h3 className="font-medium text-sm truncate">{file.title}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm truncate">{episode.title}</h3>
                     <p className="text-xs text-gray-500 mt-1">
-                      {new Date(file.updatedAt).toLocaleDateString()}
+                      {new Date(episode.updated_at).toLocaleDateString()}
                     </p>
                     <p className="text-xs text-gray-400 mt-1 line-clamp-2">
-                      {file.content.substring(0, 100)}...
+                      {episode.content.substring(0, 100)}...
                     </p>
                   </div>
 
