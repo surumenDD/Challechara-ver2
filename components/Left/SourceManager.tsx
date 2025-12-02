@@ -21,7 +21,7 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
   } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'title'>('newest');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'title'>('oldest');
   const [dragOver, setDragOver] = useState(false);
   const [activeSourceIds, setActiveSourceIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
