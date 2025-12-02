@@ -24,3 +24,12 @@ export async function createMaterial(
   });
 }
 
+/**
+ * 資料を削除
+ * DELETE /api/materials/:id
+ */
+export async function deleteMaterial(materialId: string): Promise<void> {
+  await apiRequest(`/materials/${materialId}`, {
+    method: 'DELETE'
+  });
+}
