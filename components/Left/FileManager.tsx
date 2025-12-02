@@ -166,10 +166,12 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
       }
     });
 
-  // ファイル選択処理
-  const handleFileClick = useCallback((fileId: string) => {
-    setActiveFile(bookId, fileId);
-  }, [bookId, setActiveFile]);
+  // エピソード選択処理
+  const handleEpisodeClick = useCallback((episodeId: string) => {
+    console.log('Clicking episode:', episodeId);
+    console.log('Current activeEpisodeId:', activeEpisodeId);
+    setActiveEpisodeId(episodeId);
+  }, [setActiveEpisodeId, activeEpisodeId]);
 
   // チャット用ファイル選択
   const handleToggleSelect = useCallback((fileId: string) => {
