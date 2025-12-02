@@ -19,18 +19,23 @@ export async function fetchBookDetail(bookId: string): Promise<Book> {
   return apiRequest<Book>(`/books/${bookId}`);
 }
 
-export async function createBookRequest(title: string, coverEmoji?: string): Promise<Book> {
+/**
+ * 新しい書籍を作成
+ * POST /api/books
+ */
+export async function createBookRequest(title: string, description?: string): Promise<Book> {
   const payload = {
     title,
-    description: '',
+    description: description || '',
     genre: '',
     status: 'draft'
   };
 
-  const data = await apiRequest<BackendBookDetail>('/books', {
+  return apiRequest<Book>('/books', {
     method: 'POST',
     body: JSON.stringify(payload)
   });
+}
 
   return {
     id: String(data.id),
