@@ -359,75 +359,73 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
                     </p>
                   </div>
 
-                {/* 🔥 削除ボタン */}
-                <button
-                  className="p-1 rounded hover:bg-red-50 text-red-500"
-                  onClick={(e) => {
-                    e.stopPropagation(); // クリックが file-item に伝播しないように
-                    setActiveFileState(file);  // 削除対象のファイルをセット
-                    setShowDeleteDialog(true); // ダイアログを表示
-                  }}
-                >
-                  <Trash className="w-4 h-4" />
-                </button>
-
-                {/* ファイル削除確認ダイアログ */}
-                {showDeleteDialog && activeFile && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-                    <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-red-600">ファイルを削除</h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowDeleteDialog(false)}
-                          className="p-1"
-                        >
-                          ×
-                        </Button>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="text-sm text-gray-600">
-                          <p className="mb-2">以下のファイルを削除しますか？</p>
-                          <p className="font-medium text-gray-800 bg-gray-100 p-2 rounded">
-                            {activeFile.title}
-                          </p>
-                          <p className="text-red-600 mt-2 text-xs">
-                            ⚠️ この操作は元に戻せません。
-                          </p>
-                        </div>
-
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            variant="ghost"
-                            onClick={() => setShowDeleteDialog(false)}
-                          >
-                            キャンセル
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            onClick={() => {
-                              handleDeleteFile(activeFile.id); // 実際に削除
-                              setShowDeleteDialog(false);       // ダイアログを閉じる
-                            }}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            削除する
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-
+                  {/* 削除ボタン */}
+                  <button
+                    className="p-1 rounded hover:bg-red-50 text-red-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget(episode);
+                      setShowDeleteDialog(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* エピソード削除確認ダイアログ */}
+      {showDeleteDialog && deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-red-600">エピソードを削除</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteDialog(false)}
+                className="p-1"
+              >
+                ×
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                <p className="mb-2">以下のエピソードを削除しますか？</p>
+                <p className="font-medium text-gray-800 bg-gray-100 p-2 rounded">
+                  {deleteTarget.title}
+                </p>
+                <p className="text-red-600 mt-2 text-xs">
+                  ⚠️ この操作は元に戻せません。
+                </p>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowDeleteDialog(false)}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    handleDeleteFile(deleteTarget.id);
+                    setShowDeleteDialog(false);
+                  }}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  削除する
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* フッター */}
       <div className="p-4 border-t border-gray-200">
