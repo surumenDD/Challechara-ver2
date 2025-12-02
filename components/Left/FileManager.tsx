@@ -173,13 +173,13 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
     setActiveEpisodeId(episodeId);
   }, [setActiveEpisodeId, activeEpisodeId]);
 
-  // チャット用ファイル選択
-  const handleToggleSelect = useCallback((fileId: string) => {
-    const newSelection = activeSourceIds.includes(fileId)
-      ? activeSourceIds.filter(id => id !== fileId)
-      : [...activeSourceIds, fileId];
-    setActiveSourceIds(newSelection);
-  }, [activeSourceIds, setActiveSourceIds]);
+  // チャット用エピソード選択
+  const handleToggleSelect = useCallback((episodeId: string) => {
+    const newSelection = selectedEpisodeIds.includes(episodeId)
+      ? selectedEpisodeIds.filter(id => id !== episodeId)
+      : [...selectedEpisodeIds, episodeId];
+    setSelectedEpisodeIds(newSelection);
+  }, [selectedEpisodeIds, setSelectedEpisodeIds]);
 
   const handleSelectAll = useCallback(() => {
     const allIds = filteredAndSortedEpisodes.map((e: Episode) => e.id);
@@ -192,48 +192,10 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
 
   // チャット実行
   const handleStartChat = useCallback(() => {
-    if (activeSourceIds.length > 0) {
+    if (selectedEpisodeIds.length > 0) {
       setLeftTab('chat');
     }
-  }, [activeSourceIds, setLeftTab]);
-  
-  const handleDownload = useCallback(() => {
-    const filesToDownload = (book.files ?? []).filter(file =>
-      activeSourceIds.includes(file.id)
-    );
-
-    if (filesToDownload.length === 0) {
-      return;
-    }
-
-    filesToDownload.forEach((file) => {
-      let html = file.content ?? '';
-
-      // <br> を改行に置換
-      html = html.replace(/<br\s*\/?>/gi, '\n');
-
-      // <p> と </p> を改行に置換（開始タグは無視、終了タグで改行）
-      html = html.replace(/<p[^>]*>/gi, ''); // <p>を削除
-      html = html.replace(/<\/p>/gi, '\n');  // </p>を改行に
-
-      // その他のタグを削除
-      html = html.replace(/<[^>]+>/g, '');
-
-      // 連続する改行をそのまま保持する
-      const text = html;
-
-      const filename = file.title.endsWith('.txt') ? file.title : `${file.title}.txt`;
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    });
-  }, [book, activeSourceIds]);
+  }, [selectedEpisodeIds, setLeftTab]);
 
   return (
     <div className="h-full flex flex-col">
