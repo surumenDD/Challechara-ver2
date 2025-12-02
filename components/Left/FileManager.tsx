@@ -24,7 +24,7 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
   } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'title'>('newest');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'title'>('oldest');
   const [dragOver, setDragOver] = useState(false);
   const [showNewFileDialog, setShowNewFileDialog] = useState(false);
   const [newFileName, setNewFileName] = useState('');
