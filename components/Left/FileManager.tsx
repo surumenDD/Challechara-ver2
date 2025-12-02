@@ -3,9 +3,10 @@
 import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Search, Plus, FileText, Download, Trash } from 'lucide-react';
-import { useStore, ProjectFile, Book } from '@/lib/store';
+import { Upload, Search, Plus, FileText, Trash2 } from 'lucide-react';
+import { useStore, Book, Episode } from '@/lib/store';
 import { extractText } from '@/lib/file';
+import { createEpisode, deleteEpisode } from '@/lib/api/episodes';
 
 interface FileManagerProps {
   bookId: string;
@@ -27,13 +28,12 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
   const [dragOver, setDragOver] = useState(false);
   const [showNewFileDialog, setShowNewFileDialog] = useState(false);
   const [newFileName, setNewFileName] = useState('');
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false); // 削除確認ダイアログの表示
-  const [activeFile, setActiveFileState] = useState<ProjectFile | null>(null); // 削除対象ファイル
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Episode | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const files = book.files ?? [];
-  const activeFileId = book.activeFileId;
+  const episodes: Episode[] = book.episodes ?? [];
 
   // ファイルアップロード処理
   const handleFiles = useCallback(async (uploadFiles: FileList) => {
