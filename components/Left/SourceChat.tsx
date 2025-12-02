@@ -40,8 +40,8 @@ export default function SourceChat({ bookId }: SourceChatProps) {
     addSourceChatMessage(bookId, userMessage);
 
     try {
-      // AIレスポンスを取得（選択されたファイルの内容をコンテキストとして使用）
-      const sources = [`project:${bookId}:${selectedFiles.map(f => f.title).join(',')}`];
+      // AIレスポンスを取得（選択されたエピソードの内容をコンテキストとして使用）
+      const sources = [`project:${bookId}:${selectedEpisodes.map(e => e.title).join(',')}`];
       const response = await chatProvider.send([...chatMessages, userMessage], {
         sources,
         chatType: 'project'
@@ -100,8 +100,8 @@ export default function SourceChat({ bookId }: SourceChatProps) {
         <ChatWindow messages={chatMessages} />
         <Composer
           onSend={handleSendMessage}
-          disabled={selectedFiles.length === 0}
-          placeholder="プロジェクト内のファイルについて質問する..."
+          disabled={selectedEpisodes.length === 0}
+          placeholder="エピソードについて質問する..."
         />
       </div>
     </div>
