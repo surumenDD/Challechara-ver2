@@ -97,38 +97,26 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
     }
   }, [newFileName, bookId, createEpisode, refreshBookFromBackend, setActiveEpisodeId]);
 
-  const handleDeleteFile = async (fileId: string) => {
-    const targetFile = files.find(f => f.id === fileId);
-    if (!targetFile) return;
+  const handleDeleteFile = async (episodeId: string) => {
+    const targetEpisode = episodes.find((e: Episode) => e.id === episodeId);
+    if (!targetEpisode) return;
 
     try {
-      console.log("=== DELETE FILE ===");
-      console.log("Deleting file:", targetFile.title);
+      console.log("=== DELETE EPISODE ===");
+      console.log("Deleting episode:", targetEpisode.title);
 
-      const res = await fetch(`http://localhost:8080/api/episodes/${fileId}`, {
-        method: "DELETE",
-      });
+      await deleteEpisode(episodeId);
+      await refreshBookFromBackend(bookId);
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to delete episode");
+      // activeEpisodeIdの更新
+      const remainingEpisodes = episodes.filter((e: Episode) => e.id !== episodeId);
+      if (activeEpisodeId === episodeId) {
+        setActiveEpisodeId(remainingEpisodes.length > 0 ? remainingEpisodes[0].id : null);
       }
 
-      // --- ストアから削除 ---
-      deleteProjectFile(bookId, fileId);
-
-      // activeFile の更新
-      const remainingFiles = (book.files ?? []).filter(f => f.id !== fileId);
-      if (remainingFiles.length > 0) {
-        setActiveFile(bookId, remainingFiles[0].id);
-      } else {
-        setActiveFile(bookId, null);
-      }
-
-      console.log("✅ File deleted successfully");
-
+      console.log("✅ Episode deleted successfully");
     } catch (error) {
-      console.error("❌ Failed to delete file:", error);
+      console.error("❌ Failed to delete episode:", error);
     }
   };
 
