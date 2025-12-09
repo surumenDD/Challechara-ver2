@@ -41,7 +41,7 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
 
     try {
       // AIレスポンスを取得
-      const sources = [`material:${bookId}:${selectedMaterials.map(m => m.title).join(',')}`];
+      const sources = [`material:${bookId}:${selectedMaterials.map(m => m.id).join(',')}`];
       const response = await chatProvider.send([...chatMessages, userMessage], {
         sources,
         chatType: 'material'

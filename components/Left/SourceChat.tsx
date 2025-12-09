@@ -41,7 +41,7 @@ export default function SourceChat({ bookId }: SourceChatProps) {
 
     try {
       // AIレスポンスを取得（選択されたエピソードの内容をコンテキストとして使用）
-      const sources = [`project:${bookId}:${selectedEpisodes.map(e => e.title).join(',')}`];
+      const sources = [`project:${bookId}:${selectedEpisodes.map(e => e.id).join(',')}`];
       const response = await chatProvider.send([...chatMessages, userMessage], {
         sources,
         chatType: 'project'
