@@ -52,8 +52,10 @@ export default function RichEditor({ bookId }: RichEditorProps) {
     // <ruby>タグをルビ記法に変換（長さ制限付き）
     text = text.replace(/<ruby>([^<]{1,100})<rt>([^<]{1,50})<\/rt><\/ruby>/g, '|$1《$2》');
     
-    // 傍点を記法に変換（長さ制限付き）
-    text = text.replace(/<em class="sesame-dot">([^<]{1,100})<\/em>/g, '《《$1》》');
+    // 傍点を記法に変換（長さ制限付き）- 各文字に《・》をつける形式に変換
+    text = text.replace(/<em class="sesame-dot">([^<]{1,100})<\/em>/g, (match, content) => {
+      return content.split('').map((char: string) => char + '《・》').join('');
+    });
     
     // <br>タグを改行に
     text = text.replace(/<br\s*\/?>/gi, '\n');
@@ -79,8 +81,12 @@ export default function RichEditor({ bookId }: RichEditorProps) {
     // ルビ記法: |漢字《かんじ》 → <ruby>漢字<rt>かんじ</rt></ruby>（長さ制限付き）
     html = html.replace(/\|([^《]{1,100})《([^》]{1,50})》/g, '<ruby>$1<rt>$2</rt></ruby>');
     
-    // 傍点記法: 《《強調》》 → <em class="sesame-dot">強調</em>（長さ制限付き）
-    html = html.replace(/《《([^》]{1,100})》》/g, '<em class="sesame-dot">$1</em>');
+    // 傍点記法: 強《・》調《・》 → <em class="sesame-dot">強調</em>
+    // 連続する「文字《・》」パターンを検出してまとめる
+    html = html.replace(/(.《・》)+/g, (match) => {
+      const chars = match.match(/(.)《・》/g)?.map(m => m.charAt(0)).join('') || '';
+      return `<em class="sesame-dot">${chars}</em>`;
+    });
     
     // 段落分け（改行2回）
     const paragraphs = html.split('\n\n').slice(0, 10000); // 段落数制限
@@ -221,7 +227,13 @@ export default function RichEditor({ bookId }: RichEditorProps) {
         return;
       }
       
-      const emphasisNotation = `《《${selectedText}》》`;
+      // 漢字のみに《・》をつける形式に変換
+      const emphasisNotation = selectedText.split('').map(char => {
+        // 漢字判定: Unicode範囲で判定
+        const isKanji = /[\u4E00-\u9FFF\u3400-\u4DBF]/.test(char);
+        return isKanji ? char + '《・》' : char;
+      }).join('');
+      
       const before = content.substring(0, start);
       const after = content.substring(end);
       const newContent = before + emphasisNotation + after;
@@ -315,7 +327,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
 
         {/* 使い方の説明 */}
         <div className="text-xs text-gray-500 hidden sm:flex items-center gap-2">
-          <span>💡 ルビ: |漢字《かんじ》 / 傍点: 《《強調》》</span>
+          <span>💡 ルビ: |漢字《かんじ》 / 傍点: 強《・》調《・》</span>
         </div>
       </div>
 
@@ -326,7 +338,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
           value={content}
           onChange={handleChange}
           disabled={!activeEpisode}
-          placeholder={activeEpisode ? "本文を入力してください...\n\n改行2回で段落が分かれます。\n\nルビ: |漢字《かんじ》\n傍点: 《《強調》》" : "エピソードを選択してください..."}
+          placeholder={activeEpisode ? "本文を入力してください...\n\n改行2回で段落が分かれます。\n\nルビ: |漢字《かんじ》\n傍点: 強《・》調《・》" : "エピソードを選択してください..."}
           className="w-full h-full p-8 resize-none focus:outline-none font-serif text-base leading-loose border-none disabled:bg-gray-50 disabled:text-gray-400"
           style={{
             fontSize: '16px',
