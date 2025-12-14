@@ -31,11 +31,10 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
   };
 
   const sortOptions = [
-    { value: 'newest', label: '新しい順' },
-    { value: 'oldest', label: '古い順' },
-    { value: 'titleAsc', label: 'タイトル A→Z' },
-    { value: 'titleDesc', label: 'タイトル Z→A' }
-  ] as const;
+    { value: 'newest' as const, label: '新しい順' },
+    { value: 'oldest' as const, label: '古い順' },
+    { value: 'a-z' as const, label: 'タイトル A→Z' }
+  ];
 
   const currentSortLabel = sortOptions.find(option => option.value === sortOrder)?.label || '新しい順';
 

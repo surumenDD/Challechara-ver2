@@ -3,9 +3,10 @@
 import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Upload, Search, Plus, FileText, Download } from 'lucide-react';
-import { useStore, ProjectFile, Book } from '@/lib/store';
+import { Upload, Search, Plus, FileText, Trash2 } from 'lucide-react';
+import { useStore, Book, Episode } from '@/lib/store';
 import { extractText } from '@/lib/file';
+import { createEpisode, deleteEpisode } from '@/lib/api/episodes';
 
 interface FileManagerProps {
   bookId: string;
@@ -14,67 +15,110 @@ interface FileManagerProps {
 
 export default function FileManager({ bookId, book }: FileManagerProps) {
   const {
-    addProjectFile,
-    updateProjectFile,
-    deleteProjectFile,
-    setActiveFile,
-    activeSourceIds,
-    setActiveSourceIds,
+    activeEpisodeId,
+    setActiveEpisodeId,
+    selectedEpisodeIds,
+    setSelectedEpisodeIds,
+    refreshBookFromBackend,
     setLeftTab
   } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'title'>('newest');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'title'>('oldest');
   const [dragOver, setDragOver] = useState(false);
   const [showNewFileDialog, setShowNewFileDialog] = useState(false);
   const [newFileName, setNewFileName] = useState('');
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Episode | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const files = book.files ?? [];
-  const activeFileId = book.activeFileId;
+  const episodes: Episode[] = book.episodes ?? [];
 
   // ファイルアップロード処理
   const handleFiles = useCallback(async (uploadFiles: FileList) => {
+    // 既存のエピソード数を取得して連番を生成
+    const maxEpisodeNo = episodes.length > 0 
+      ? Math.max(...episodes.map(e => e.episode_no || 0))
+      : 0;
+    
+    let episodeCounter = maxEpisodeNo + 1;
+    
     for (const file of Array.from(uploadFiles)) {
-      if (file.type.match(/^(text\/|application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document))/)) {
+      // テキストファイル、Markdownファイルをサポート
+      const isTextFile = file.type.startsWith('text/') || 
+                        file.name.endsWith('.txt') || 
+                        file.name.endsWith('.md') || 
+                        file.name.endsWith('.markdown');
+      
+      if (isTextFile) {
         try {
           const content = await extractText(file);
-          const projectFile: ProjectFile = {
-            id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            title: file.name,
+          const payload = {
+            title: file.name.replace(/\.[^/.]+$/, ''),
             content,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
+            episode_no: episodeCounter++
           };
-          addProjectFile(bookId, projectFile);
+          await createEpisode(bookId, payload);
+          await refreshBookFromBackend(bookId);
         } catch (error) {
           console.error('ファイル処理エラー:', error);
+          alert(`ファイル「${file.name}」のアップロードに失敗しました。`);
         }
+      } else {
+        alert(`ファイル「${file.name}」は対応していません。テキストファイル (.txt, .md) をアップロードしてください。`);
       }
     }
-  }, [bookId, addProjectFile]);
+  }, [bookId, episodes, refreshBookFromBackend]);
 
-  // 新規ファイル作成
-  const handleCreateNewFile = useCallback(() => {
+  // 新規エピソード作成
+  const handleCreateNewFile = useCallback(async () => {
     if (!newFileName.trim()) return;
     
-    const fileName = newFileName.trim().endsWith('.txt') 
-      ? newFileName.trim() 
-      : `${newFileName.trim()}.txt`;
-      
-    const projectFile: ProjectFile = {
-      id: `file-${Date.now()}`,
-      title: fileName,
-      content: `# ${fileName.replace('.txt', '')}\n\n`,
-      createdAt: Date.now(),
-      updatedAt: Date.now()
-    };
+    const maxEpisodeNo = episodes.length > 0 
+      ? Math.max(...episodes.map(e => e.episode_no || 0))
+      : 0;
     
-    addProjectFile(bookId, projectFile);
-    setActiveFile(bookId, projectFile.id);
-    setShowNewFileDialog(false);
-    setNewFileName('');
-  }, [newFileName, bookId, addProjectFile, setActiveFile]);
+    const title = newFileName.trim().replace('.txt', '');
+    const payload = {
+      title,
+      content: `# ${title}\n\n`,
+      episode_no: maxEpisodeNo + 1
+    };
+
+    try {
+      const createdEpisode = await createEpisode(bookId, payload);
+      await refreshBookFromBackend(bookId);
+      setActiveEpisodeId(createdEpisode.id);
+      setShowNewFileDialog(false);
+      setNewFileName('');
+    } catch (err) {
+      console.error('エピソード作成エラー:', err);
+    }
+  }, [newFileName, bookId, createEpisode, refreshBookFromBackend, setActiveEpisodeId]);
+
+  const handleDeleteFile = async (episodeId: string) => {
+    const targetEpisode = episodes.find((e: Episode) => e.id === episodeId);
+    if (!targetEpisode) return;
+
+    try {
+      console.log("=== DELETE EPISODE ===");
+      console.log("Deleting episode:", targetEpisode.title);
+
+      await deleteEpisode(episodeId);
+      await refreshBookFromBackend(bookId);
+
+      // activeEpisodeIdの更新
+      const remainingEpisodes = episodes.filter((e: Episode) => e.id !== episodeId);
+      if (activeEpisodeId === episodeId) {
+        setActiveEpisodeId(remainingEpisodes.length > 0 ? remainingEpisodes[0].id : null);
+      }
+
+      console.log("✅ Episode deleted successfully");
+    } catch (error) {
+      console.error("❌ Failed to delete episode:", error);
+    }
+  };
 
   // ドラッグ&ドロップ
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -105,16 +149,16 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
   }, [handleFiles]);
 
   // フィルタリング・ソート
-  const filteredAndSortedFiles = files
-    .filter(file => 
-      file.title.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredAndSortedEpisodes = episodes
+    .filter((episode: Episode) => 
+      episode.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
-    .sort((a, b) => {
+    .sort((a: Episode, b: Episode) => {
       switch (sortOrder) {
         case 'newest':
-          return b.updatedAt - a.updatedAt;
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
         case 'oldest':
-          return a.updatedAt - b.updatedAt;
+          return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
         case 'title':
           return a.title.localeCompare(b.title);
         default:
@@ -122,72 +166,36 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
       }
     });
 
-  // ファイル選択処理
-  const handleFileClick = useCallback((fileId: string) => {
-    setActiveFile(bookId, fileId);
-  }, [bookId, setActiveFile]);
+  // エピソード選択処理
+  const handleEpisodeClick = useCallback((episodeId: string) => {
+    console.log('Clicking episode:', episodeId);
+    console.log('Current activeEpisodeId:', activeEpisodeId);
+    setActiveEpisodeId(episodeId);
+  }, [setActiveEpisodeId, activeEpisodeId]);
 
-  // チャット用ファイル選択
-  const handleToggleSelect = useCallback((fileId: string) => {
-    const newSelection = activeSourceIds.includes(fileId)
-      ? activeSourceIds.filter(id => id !== fileId)
-      : [...activeSourceIds, fileId];
-    setActiveSourceIds(newSelection);
-  }, [activeSourceIds, setActiveSourceIds]);
+  // チャット用エピソード選択
+  const handleToggleSelect = useCallback((episodeId: string) => {
+    const newSelection = selectedEpisodeIds.includes(episodeId)
+      ? selectedEpisodeIds.filter(id => id !== episodeId)
+      : [...selectedEpisodeIds, episodeId];
+    setSelectedEpisodeIds(newSelection);
+  }, [selectedEpisodeIds, setSelectedEpisodeIds]);
 
   const handleSelectAll = useCallback(() => {
-    const allIds = filteredAndSortedFiles.map(f => f.id);
-    setActiveSourceIds(allIds);
-  }, [filteredAndSortedFiles, setActiveSourceIds]);
+    const allIds = filteredAndSortedEpisodes.map((e: Episode) => e.id);
+    setSelectedEpisodeIds(allIds);
+  }, [filteredAndSortedEpisodes]);
 
   const handleSelectNone = useCallback(() => {
-    setActiveSourceIds([]);
-  }, [setActiveSourceIds]);
+    setSelectedEpisodeIds([]);
+  }, []);
 
   // チャット実行
   const handleStartChat = useCallback(() => {
-    if (activeSourceIds.length > 0) {
+    if (selectedEpisodeIds.length > 0) {
       setLeftTab('chat');
     }
-  }, [activeSourceIds, setLeftTab]);
-  
-  const handleDownload = useCallback(() => {
-    const filesToDownload = (book.files ?? []).filter(file =>
-      activeSourceIds.includes(file.id)
-    );
-
-    if (filesToDownload.length === 0) {
-      return;
-    }
-
-    filesToDownload.forEach((file) => {
-      let html = file.content ?? '';
-
-      // <br> を改行に置換
-      html = html.replace(/<br\s*\/?>/gi, '\n');
-
-      // <p> と </p> を改行に置換（開始タグは無視、終了タグで改行）
-      html = html.replace(/<p[^>]*>/gi, ''); // <p>を削除
-      html = html.replace(/<\/p>/gi, '\n');  // </p>を改行に
-
-      // その他のタグを削除
-      html = html.replace(/<[^>]+>/g, '');
-
-      // 連続する改行をそのまま保持する
-      const text = html;
-
-      const filename = file.title.endsWith('.txt') ? file.title : `${file.title}.txt`;
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    });
-  }, [book, activeSourceIds]);
+  }, [selectedEpisodeIds, setLeftTab]);
 
   return (
     <div className="h-full flex flex-col">
@@ -221,7 +229,7 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
               または<span className="text-blue-600">クリックして選択</span>
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              PDF, TXT, MD, DOCX対応
+              TXT, MD対応
             </p>
           </div>
         </div>
@@ -230,7 +238,7 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
           ref={fileInputRef}
           type="file"
           multiple
-          accept=".pdf,.txt,.md,.docx"
+          accept=".txt,.md,.markdown"
           onChange={handleFileSelect}
           className="hidden"
         />
@@ -257,7 +265,7 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
               variant="ghost"
               size="sm"
               onClick={handleSelectAll}
-              disabled={files.length === 0}
+              disabled={episodes.length === 0}
             >
               全選択
             </Button>
@@ -265,7 +273,7 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
               variant="ghost"
               size="sm"
               onClick={handleSelectNone}
-              disabled={activeSourceIds.length === 0}
+              disabled={selectedEpisodeIds.length === 0}
             >
               解除
             </Button>
@@ -273,47 +281,57 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
         </div>
       </div>
 
-      {/* ファイル一覧 */}
+      {/* エピソード一覧 */}
       <div className="flex-1 overflow-y-auto">
-        {filteredAndSortedFiles.length === 0 ? (
+        {filteredAndSortedEpisodes.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
-            <p>ファイルがありません</p>
+            <p>エピソードがありません</p>
             <p className="text-sm mt-1">新規作成またはアップロードしてください</p>
           </div>
         ) : (
           <div className="p-2">
-            {filteredAndSortedFiles.map((file) => (
+            {filteredAndSortedEpisodes.map((episode: Episode) => (
               <div
-                key={file.id}
+                key={episode.id}
                 className={`file-item p-3 mb-2 rounded border cursor-pointer transition-colors ${
-                  activeFileId === file.id 
+                  activeEpisodeId === episode.id 
                     ? 'border-blue-500 bg-blue-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
+                onClick={() => handleEpisodeClick(episode.id)}
               >
                 <div className="flex items-start gap-3">
                   <input
                     type="checkbox"
-                    checked={activeSourceIds.includes(file.id)}
-                    onChange={() => handleToggleSelect(file.id)}
+                    checked={selectedEpisodeIds.includes(episode.id)}
+                    onChange={() => handleToggleSelect(episode.id)}
                     className="mt-1"
                     onClick={(e) => e.stopPropagation()}
                   />
                   
                   <FileText className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" />
                   
-                  <div 
-                    className="flex-1 min-w-0"
-                    onClick={() => handleFileClick(file.id)}
-                  >
-                    <h3 className="font-medium text-sm truncate">{file.title}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm truncate">{episode.title}</h3>
                     <p className="text-xs text-gray-500 mt-1">
-                      {new Date(file.updatedAt).toLocaleDateString()}
+                      {new Date(episode.updated_at).toLocaleDateString()}
                     </p>
                     <p className="text-xs text-gray-400 mt-1 line-clamp-2">
-                      {file.content.substring(0, 100)}...
+                      {episode.content.substring(0, 100)}...
                     </p>
                   </div>
+
+                  {/* 削除ボタン */}
+                  <button
+                    className="p-1 rounded hover:bg-red-50 text-red-500"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget(episode);
+                      setShowDeleteDialog(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -321,25 +339,66 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
         )}
       </div>
 
+      {/* エピソード削除確認ダイアログ */}
+      {showDeleteDialog && deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-red-600">エピソードを削除</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteDialog(false)}
+                className="p-1"
+              >
+                ×
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                <p className="mb-2">以下のエピソードを削除しますか？</p>
+                <p className="font-medium text-gray-800 bg-gray-100 p-2 rounded">
+                  {deleteTarget.title}
+                </p>
+                <p className="text-red-600 mt-2 text-xs">
+                  ⚠️ この操作は元に戻せません。
+                </p>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowDeleteDialog(false)}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    handleDeleteFile(deleteTarget.id);
+                    setShowDeleteDialog(false);
+                  }}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  削除する
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* フッター */}
       <div className="p-4 border-t border-gray-200">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">
-            {activeSourceIds.length}件選択中
+            {selectedEpisodeIds.length}件選択中
           </span>
           <Button
             variant="default"
-            onClick={handleDownload}
-            disabled={activeSourceIds.length === 0}
-            className="flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            ダウンロード
-          </Button>
-          <Button
-            variant="default"
             onClick={handleStartChat}
-            disabled={activeSourceIds.length === 0}
+            disabled={selectedEpisodeIds.length === 0}
             className="flex items-center gap-2"
           >
             <Search className="w-4 h-4" />
@@ -348,12 +407,12 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
         </div>
       </div>
 
-      {/* 新規ファイル作成ダイアログ */}
+      {/* 新規エピソード作成ダイアログ */}
       {showNewFileDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">新しいファイルを作成</h3>
+              <h3 className="text-lg font-semibold">新しいエピソードを作成</h3>
               <Button
                 variant="ghost"
                 size="sm"
@@ -366,11 +425,11 @@ export default function FileManager({ bookId, book }: FileManagerProps) {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">ファイル名</label>
+                <label className="block text-sm font-medium mb-1">エピソード名</label>
                 <Input
                   value={newFileName}
                   onChange={(e) => setNewFileName(e.target.value)}
-                  placeholder="ファイル名を入力..."
+                  placeholder="エピソード名を入力..."
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       handleCreateNewFile();

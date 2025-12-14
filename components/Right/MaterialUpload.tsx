@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Upload, X } from 'lucide-react';
+import { Upload, Trash2 } from 'lucide-react';
 import { useStore, Material } from '@/lib/store';
-import { extractText, formatFileSize, formatRelativeTime } from '@/lib/file';
+import { extractText } from '@/lib/file';
 import ChipList from '../Common/ChipList';
 
 interface MaterialUploadProps {
@@ -13,74 +13,36 @@ interface MaterialUploadProps {
 
 export default function MaterialUpload({ bookId }: MaterialUploadProps) {
   const {
-    materials,
-    addMaterial,
-    loadMaterialsFromBackend,
-    deleteMaterial,
-    activeMaterialIds,
-    setActiveMaterialIds
+    books,
+    selectedMaterialIds,
+    setSelectedMaterialIds,
+    refreshBookFromBackend
   } = useStore();
 
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const bookMaterials = materials[bookId] || [];
-  const selectedMaterials = bookMaterials.filter(material => 
-    activeMaterialIds.includes(material.id)
+  const book = books.find(b => b.id === bookId);
+  const bookMaterials = book?.materials || [];
+  const selectedMaterials = bookMaterials.filter(material =>
+    selectedMaterialIds.includes(material.id)
   );
-
-  // 初回読み込み
-  useEffect(() => {
-    if (bookMaterials.length === 0) {
-      loadMaterialsFromBackend(bookId);
-    }
-  }, [bookId, bookMaterials.length, loadMaterialsFromBackend]);
 
   // ファイルアップロード処理
   const handleFiles = useCallback(async (files: FileList) => {
+    const { createMaterial } = await import('@/lib/api/materials');
+    
     for (const file of Array.from(files)) {
       try {
-        // バックエンドAPIを使用してアップロード
-        const formData = new FormData();
-        formData.append('book_id', bookId);
-        formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
-        formData.append('file', file);
-
-        const response = await fetch('http://localhost:8000/api/materials/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Upload failed: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        
-        if (result.success) {
-          // フロントエンドの状態を更新
-          addMaterial(bookId, result.material);
-        } else {
-          throw new Error(result.message || 'アップロードに失敗しました');
-        }
+        const content = await extractText(file);
+        const title = file.name.replace(/\.[^/.]+$/, '');
+        await createMaterial(bookId, title, content);
+        await refreshBookFromBackend(bookId);
       } catch (error) {
         console.error('資料アップロードエラー:', error);
-        // エラーの場合はフォールバック処理（既存のローカル処理）
-        try {
-          const content = await extractText(file);
-          const material: Material = {
-            id: `material-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            title: file.name.replace(/\.[^/.]+$/, ''),
-            content,
-            createdAt: Date.now()
-          };
-          addMaterial(bookId, material);
-        } catch (fallbackError) {
-          console.error('フォールバック処理も失敗:', fallbackError);
-        }
       }
     }
-  }, [bookId, addMaterial]);
+  }, [bookId, refreshBookFromBackend]);
 
   // ドラッグ&ドロップ
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -112,66 +74,68 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
 
   // 資料選択
   const handleToggleSelect = useCallback((materialId: string) => {
-    const newSelection = activeMaterialIds.includes(materialId)
-      ? activeMaterialIds.filter(id => id !== materialId)
-      : [...activeMaterialIds, materialId];
-    setActiveMaterialIds(newSelection);
-  }, [activeMaterialIds, setActiveMaterialIds]);
+    const newSelection = selectedMaterialIds.includes(materialId)
+      ? selectedMaterialIds.filter(id => id !== materialId)
+      : [...selectedMaterialIds, materialId];
+    setSelectedMaterialIds(newSelection);
+  }, [selectedMaterialIds, setSelectedMaterialIds]);
 
   // 全選択・全解除
   const handleSelectAll = useCallback(() => {
     const allIds = bookMaterials.map(m => m.id);
-    setActiveMaterialIds(allIds);
-  }, [bookMaterials, setActiveMaterialIds]);
+    setSelectedMaterialIds(allIds);
+  }, [bookMaterials, setSelectedMaterialIds]);
 
   const handleSelectNone = useCallback(() => {
-    setActiveMaterialIds([]);
-  }, [setActiveMaterialIds]);
+    setSelectedMaterialIds([]);
+  }, [setSelectedMaterialIds]);
 
   // チップ削除
   const handleRemoveMaterial = useCallback((materialId: string) => {
-    const newSelection = activeMaterialIds.filter(id => id !== materialId);
-    setActiveMaterialIds(newSelection);
-  }, [activeMaterialIds, setActiveMaterialIds]);
+    const newSelection = selectedMaterialIds.filter(id => id !== materialId);
+    setSelectedMaterialIds(newSelection);
+  }, [selectedMaterialIds, setSelectedMaterialIds]);
 
   // 資料削除
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Material | null>(null);
+
   const handleDeleteMaterial = useCallback(async (materialId: string) => {
-    if (confirm('この資料を削除しますか？')) {
-      try {
-        // バックエンドAPIを使用して削除
-        const response = await fetch(`http://localhost:8000/api/materials/${bookId}/${materialId}`, {
-          method: 'DELETE',
-        });
+    const targetMaterial = bookMaterials.find(m => m.id === materialId);
+    if (!targetMaterial) return;
+    
+    setDeleteTarget(targetMaterial);
+    setShowDeleteDialog(true);
+  }, [bookMaterials]);
 
-        if (!response.ok) {
-          throw new Error(`Delete failed: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        
-        if (result.success) {
-          // フロントエンドの状態を更新
-          deleteMaterial(bookId, materialId);
-          // 選択からも削除
-          const newSelection = activeMaterialIds.filter(id => id !== materialId);
-          setActiveMaterialIds(newSelection);
-        } else {
-          throw new Error(result.message || '削除に失敗しました');
-        }
-      } catch (error) {
-        console.error('資料削除エラー:', error);
-        // エラーの場合はフォールバック処理（既存のローカル処理）
-        deleteMaterial(bookId, materialId);
-        const newSelection = activeMaterialIds.filter(id => id !== materialId);
-        setActiveMaterialIds(newSelection);
-      }
+  const executeDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    
+    try {
+      const { deleteMaterial } = await import('@/lib/api/materials');
+      await deleteMaterial(deleteTarget.id);
+      await refreshBookFromBackend(bookId);
+      
+      // 選択からも削除
+      const newSelection = selectedMaterialIds.filter(id => id !== deleteTarget.id);
+      setSelectedMaterialIds(newSelection);
+    } catch (error) {
+      console.error('資料削除エラー:', error);
+    } finally {
+      setShowDeleteDialog(false);
+      setDeleteTarget(null);
     }
-  }, [deleteMaterial, bookId, activeMaterialIds, setActiveMaterialIds]);
+  }, [deleteTarget, bookId, selectedMaterialIds, setSelectedMaterialIds, refreshBookFromBackend]);
 
   return (
     <div className="h-full flex flex-col">
-      {/* アップロードエリア */}
+      {/* ヘッダー */}
       <div className="p-4 border-b border-gray-200">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="font-semibold text-lg">資料管理</h2>
+        </div>
+        
+        {/* アップロードエリア */}
         <div
           className={`dropzone p-4 mb-3 cursor-pointer ${dragOver ? 'drag-over' : ''}`}
           onDragOver={handleDragOver}
@@ -182,9 +146,9 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
           <div className="text-center">
             <Upload className="w-6 h-6 mx-auto mb-2 text-gray-400" />
             <p className="text-sm text-gray-600">
-              資料をアップロード
+              ファイルをドラッグ&ドロップ
               <br />
-              <span className="text-blue-600">クリックまたはドラッグ&ドロップ</span>
+              または<span className="text-blue-600">クリックして選択</span>
             </p>
             <p className="text-xs text-gray-500 mt-1">
               PDF, TXT, MD, DOCX対応
@@ -201,31 +165,27 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
           className="hidden"
         />
 
-        {/* 選択操作 */}
-        {bookMaterials.length > 0 && (
-          <div className="flex gap-2 justify-between items-center">
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSelectAll}
-              >
-                全選択
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSelectNone}
-                disabled={activeMaterialIds.length === 0}
-              >
-                解除
-              </Button>
-            </div>
-            <span className="text-sm text-gray-600">
-              {activeMaterialIds.length}件選択中
-            </span>
+        {/* 選択・ソート */}
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSelectAll}
+              disabled={bookMaterials.length === 0}
+            >
+              全選択
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSelectNone}
+              disabled={selectedMaterialIds.length === 0}
+            >
+              解除
+            </Button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* 選択中の資料チップ */}
@@ -254,56 +214,101 @@ export default function MaterialUpload({ bookId }: MaterialUploadProps) {
         ) : (
           <div className="p-2">
             {bookMaterials.map((material) => (
-              <div 
+              <div
                 key={material.id}
-                className={`p-3 mb-2 rounded-lg border transition-colors cursor-pointer ${
-                  activeMaterialIds.includes(material.id)
-                    ? 'border-blue-500 bg-blue-50' 
+                className={`p-3 mb-2 rounded border cursor-pointer transition-colors ${
+                  selectedMaterialIds.includes(material.id)
+                    ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
-                onClick={() => handleToggleSelect(material.id)}
               >
                 <div className="flex items-start gap-3">
-                  {/* チェックボックス */}
                   <input
                     type="checkbox"
-                    checked={activeMaterialIds.includes(material.id)}
+                    checked={selectedMaterialIds.includes(material.id)}
                     onChange={() => handleToggleSelect(material.id)}
-                    className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    className="mt-1"
                     onClick={(e) => e.stopPropagation()}
                   />
                   
-                  {/* コンテンツ */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm text-gray-900 truncate mb-1">
-                      {material.title}
-                    </h3>
-                    <p className="text-xs text-gray-600 line-clamp-2 mb-2">
+                  <Upload className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" />
+                  
+                  <div 
+                    className="flex-1 min-w-0"
+                    onClick={() => handleToggleSelect(material.id)}
+                  >
+                    <h3 className="font-medium text-sm truncate">{material.title}</h3>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(material.created_at).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-2">
                       {material.content.substring(0, 100)}...
                     </p>
-                    <div className="text-xs text-gray-500">
-                      {formatRelativeTime(material.createdAt)}
-                    </div>
                   </div>
 
                   {/* 削除ボタン */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <button
+                    className="p-1 rounded hover:bg-red-50 text-red-500"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteMaterial(material.id);
                     }}
-                    className="p-1 text-red-600 hover:bg-red-50"
                   >
-                    <X className="w-4 h-4" />
-                  </Button>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* 資料削除確認ダイアログ */}
+      {showDeleteDialog && deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-90vw">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-red-600">資料を削除</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteDialog(false)}
+                className="p-1"
+              >
+                ×
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600">
+                <p className="mb-2">以下の資料を削除しますか？</p>
+                <p className="font-medium text-gray-800 bg-gray-100 p-2 rounded">
+                  {deleteTarget.title}
+                </p>
+                <p className="text-red-600 mt-2 text-xs">
+                  ⚠️ この操作は元に戻せません。
+                </p>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowDeleteDialog(false)}
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={executeDelete}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  削除する
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

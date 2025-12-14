@@ -12,19 +12,20 @@ interface MaterialChatProps {
 
 export default function MaterialChat({ bookId }: MaterialChatProps) {
   const {
-    materials,
-    activeMaterialIds,
+    books,
+    selectedMaterialIds,
+    setSelectedMaterialIds,
     materialChats,
-    addMaterialChatMessage,
-    setActiveMaterialIds
+    addMaterialChatMessage
   } = useStore();
 
-  const bookMaterials = materials[bookId] || [];
+  const book = books.find(b => b.id === bookId);
+  const bookMaterials = book?.materials || [];
   const chatMessages = materialChats[bookId] || [];
 
   // 選択された資料の情報
   const selectedMaterials = bookMaterials.filter(material =>
-    activeMaterialIds.includes(material.id)
+    selectedMaterialIds.includes(material.id)
   );
 
   // メッセージ送信
@@ -40,7 +41,7 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
 
     try {
       // AIレスポンスを取得
-      const sources = [`material:${bookId}:${selectedMaterials.map(m => m.title).join(',')}`];
+      const sources = [`material:${bookId}:${selectedMaterials.map(m => m.id).join(',')}`];
       const response = await chatProvider.send([...chatMessages, userMessage], {
         sources,
         chatType: 'material'
@@ -60,8 +61,8 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
 
   // チップ削除
   const handleRemoveMaterial = (materialId: string) => {
-    const newSelection = activeMaterialIds.filter(id => id !== materialId);
-    setActiveMaterialIds(newSelection);
+    const newSelection = selectedMaterialIds.filter(id => id !== materialId);
+    setSelectedMaterialIds(newSelection);
   };
 
   return (

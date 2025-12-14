@@ -166,6 +166,17 @@ rt {
   color: #6b7280;
 }
 
+/* 傍点スタイル（ごまてん） */
+.sesame-dot {
+  text-emphasis-style: filled sesame;
+  -webkit-text-emphasis-style: filled sesame;
+  text-emphasis-position: over right;
+  -webkit-text-emphasis-position: over right;
+  text-emphasis-color: currentColor;
+  -webkit-text-emphasis-color: currentColor;
+  font-style: normal;
+}
+
 /* ドロップゾーンスタイル */
 .dropzone {
   border: 2px dashed #d1d5db;

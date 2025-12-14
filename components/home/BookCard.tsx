@@ -35,7 +35,7 @@ export default function BookCard({ book, onClick, onAction }: BookCardProps) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-lg">
-            {book.coverEmoji || '📖'}
+            📖
           </div>
         </div>
         
@@ -103,8 +103,8 @@ export default function BookCard({ book, onClick, onAction }: BookCardProps) {
       {/* フッター */}
       <div className="absolute bottom-4 left-4 right-4">
         <div className="flex justify-between items-center text-sm text-gray-600">
-          <span>{formatDate(book.updatedAt)}</span>
-          <span>{book.sourceCount}個のソース</span>
+          <span>{new Date(book.updated_at).toLocaleDateString()}</span>
+          <span>{book.episodes?.length || 0}個のエピソード</span>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { X, BookOpen } from 'lucide-react';
-import { useStore, Book, ProjectFile } from '@/lib/store';
+import { useStore } from '@/lib/store';
 import { exportAsTxt } from '@/lib/file';
 import Header from '@/components/Header';
 import Toolbar from '@/components/home/Toolbar';
@@ -20,11 +20,9 @@ export default function HomePage() {
     viewMode,
     sortOrder,
     query,
-    addBook,
     createBook,
     updateBook,
     deleteBook,
-    duplicateBook,
     initializeBooks
   } = useStore();
 
@@ -45,19 +43,16 @@ export default function HomePage() {
   // フィルタリング・ソート
   const filteredAndSortedBooks = books
     .filter(book =>
-      !book.archived &&
       book.title.toLowerCase().includes(query.toLowerCase())
     )
     .sort((a, b) => {
       switch (sortOrder) {
         case 'newest':
-          return b.updatedAt - a.updatedAt;
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
         case 'oldest':
-          return a.updatedAt - b.updatedAt;
-        case 'titleAsc':
+          return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+        case 'a-z':
           return a.title.localeCompare(b.title);
-        case 'titleDesc':
-          return b.title.localeCompare(a.title);
         default:
           return 0;
       }
@@ -104,16 +99,14 @@ export default function HomePage() {
       case 'rename':
         const newTitle = prompt('新しいタイトルを入力してください:', book.title);
         if (newTitle && newTitle.trim() !== book.title) {
-          updateBook({ ...book, title: newTitle.trim(), updatedAt: Date.now() });
+          updateBook(bookId, { title: newTitle.trim() });
         }
         break;
 
-      case 'duplicate':
-        duplicateBook(bookId);
-        break;
-
       case 'export':
-        exportAsTxt(book.title, book.content || '');
+        const allEpisodes = book.episodes || [];
+        const content = allEpisodes.map(ep => `${ep.title}\n\n${ep.content}`).join('\n\n---\n\n');
+        exportAsTxt(book.title, content);
         break;
 
       case 'delete':
