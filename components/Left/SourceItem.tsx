@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { MoreVertical, Download, Trash2 } from 'lucide-react';
-import { Episode } from '@/lib/store';
-import { useStore } from '@/lib/store';
-import { exportAsTxt } from '@/lib/file';
-import { deleteEpisode } from '@/lib/api/episodes';
+import { useState, useCallback } from "react";
+import { MoreVertical, Download, Trash2 } from "lucide-react";
+import { Episode } from "@/lib/store";
+import { useStore } from "@/lib/store";
+import { exportAsTxt } from "@/lib/file";
+import { deleteEpisode } from "@/lib/api/episodes";
 
 interface SourceItemProps {
   episode: Episode;
@@ -14,7 +14,12 @@ interface SourceItemProps {
   onToggleSelect: (episodeId: string) => void;
 }
 
-export default function SourceItem({ episode, bookId, isSelected, onToggleSelect }: SourceItemProps) {
+export default function SourceItem({
+  episode,
+  bookId,
+  isSelected,
+  onToggleSelect,
+}: SourceItemProps) {
   const { refreshBookFromBackend } = useStore();
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
@@ -28,9 +33,9 @@ export default function SourceItem({ episode, bookId, isSelected, onToggleSelect
     // 外側クリックで閉じる
     const handleClickOutside = (event: MouseEvent) => {
       setShowContextMenu(false);
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
   }, []);
 
   // TXTエクスポート
@@ -41,12 +46,12 @@ export default function SourceItem({ episode, bookId, isSelected, onToggleSelect
 
   // 削除
   const handleDelete = useCallback(async () => {
-    if (confirm('このエピソードを削除しますか？')) {
+    if (confirm("このエピソードを削除しますか？")) {
       try {
         await deleteEpisode(episode.id);
         await refreshBookFromBackend(bookId);
       } catch (error) {
-        console.error('Failed to delete episode:', error);
+        console.error("Failed to delete episode:", error);
       }
     }
     setShowContextMenu(false);
@@ -54,18 +59,18 @@ export default function SourceItem({ episode, bookId, isSelected, onToggleSelect
 
   // ESCキーでメニューを閉じる
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       setShowContextMenu(false);
     }
   }, []);
 
   return (
     <>
-      <div 
+      <div
         className={`p-3 mb-2 rounded-lg border transition-colors cursor-pointer ${
-          isSelected 
-            ? 'border-blue-500 bg-blue-50' 
-            : 'border-gray-200 hover:border-gray-300'
+          isSelected
+            ? "border-blue-500 bg-blue-50"
+            : "border-gray-200 hover:border-gray-300"
         }`}
         onClick={() => onToggleSelect(episode.id)}
         onContextMenu={handleContextMenu}
@@ -79,7 +84,7 @@ export default function SourceItem({ episode, bookId, isSelected, onToggleSelect
             className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             onClick={(e) => e.stopPropagation()}
           />
-          
+
           {/* コンテンツ */}
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-sm text-gray-900 truncate mb-1">
@@ -110,16 +115,13 @@ export default function SourceItem({ episode, bookId, isSelected, onToggleSelect
       {showContextMenu && (
         <div
           className="context-menu"
-          style={{ 
-            left: contextMenuPos.x, 
-            top: contextMenuPos.y 
+          style={{
+            left: contextMenuPos.x,
+            top: contextMenuPos.y,
           }}
           onKeyDown={handleKeyDown}
         >
-          <button
-            className="context-menu-item"
-            onClick={handleExport}
-          >
+          <button className="context-menu-item" onClick={handleExport}>
             <Download className="w-4 h-4 mr-2" />
             TXTエクスポート
           </button>

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { MoreVertical, Edit, Copy, Download, Trash2 } from 'lucide-react';
-import { Book } from '@/lib/store';
-import { formatDate } from '@/lib/file';
+import { useState } from "react";
+import { MoreVertical, Edit, Copy, Download, Trash2 } from "lucide-react";
+import { Book } from "@/lib/store";
+import { formatDate } from "@/lib/file";
 
 interface BookCardProps {
   book: Book;
@@ -21,7 +21,7 @@ export default function BookCard({ book, onClick, onAction }: BookCardProps) {
   };
 
   const handleCardClick = () => {
-    console.log('Card clicked:', book.id);
+    console.log("Card clicked:", book.id);
     onClick();
   };
 
@@ -38,7 +38,7 @@ export default function BookCard({ book, onClick, onAction }: BookCardProps) {
             📖
           </div>
         </div>
-        
+
         <div className="relative">
           <button
             onClick={(e) => {
@@ -53,28 +53,28 @@ export default function BookCard({ book, onClick, onAction }: BookCardProps) {
           {showMenu && (
             <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-44">
               <button
-                onClick={(e) => handleMenuClick(e, 'open')}
+                onClick={(e) => handleMenuClick(e, "open")}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg"
               >
                 開く
               </button>
               <div className="border-t border-gray-100" />
               <button
-                onClick={(e) => handleMenuClick(e, 'rename')}
+                onClick={(e) => handleMenuClick(e, "rename")}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
               >
                 <Edit className="w-4 h-4" />
                 名前変更...
               </button>
               <button
-                onClick={(e) => handleMenuClick(e, 'duplicate')}
+                onClick={(e) => handleMenuClick(e, "duplicate")}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
               >
                 <Copy className="w-4 h-4" />
                 複製
               </button>
               <button
-                onClick={(e) => handleMenuClick(e, 'export')}
+                onClick={(e) => handleMenuClick(e, "export")}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
               >
                 <Download className="w-4 h-4" />
@@ -82,7 +82,7 @@ export default function BookCard({ book, onClick, onAction }: BookCardProps) {
               </button>
               <div className="border-t border-gray-100" />
               <button
-                onClick={(e) => handleMenuClick(e, 'delete')}
+                onClick={(e) => handleMenuClick(e, "delete")}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 text-red-600 flex items-center gap-2 last:rounded-b-lg"
               >
                 <Trash2 className="w-4 h-4" />
@@ -110,7 +110,7 @@ export default function BookCard({ book, onClick, onAction }: BookCardProps) {
 
       {/* 外側クリックでメニューを閉じる */}
       {showMenu && (
-        <div 
+        <div
           className="fixed inset-0 z-5"
           onClick={(e) => {
             e.stopPropagation();

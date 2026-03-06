@@ -1,5 +1,5 @@
-import { Material } from '@/lib/store/types';
-import { apiRequest } from './client';
+import { Material } from "@/lib/store/types";
+import { apiRequest } from "./client";
 
 /**
  * 書籍に紐づく全資料を取得
@@ -19,8 +19,8 @@ export async function createMaterial(
   content: string
 ): Promise<Material> {
   return apiRequest<Material>(`/books/${bookId}/materials`, {
-    method: 'POST',
-    body: JSON.stringify({ title, content })
+    method: "POST",
+    body: JSON.stringify({ title, content }),
   });
 }
 
@@ -30,6 +30,6 @@ export async function createMaterial(
  */
 export async function deleteMaterial(materialId: string): Promise<void> {
   await apiRequest(`/materials/${materialId}`, {
-    method: 'DELETE'
+    method: "DELETE",
   });
 }

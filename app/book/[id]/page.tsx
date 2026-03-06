@@ -1,56 +1,59 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Menu, X } from 'lucide-react';
-import { useStore } from '@/lib/store';
-import Header from '@/components/Header';
-import Panels from '@/components/Panels';
-import FileManager from '@/components/Left/FileManager';
-import SourceChat from '@/components/Left/SourceChat';
-import TitleBar from '@/components/Editor/TitleBar';
-import RichEditor from '@/components/Editor/RichEditor';
-import DictionarySearch from '@/components/Right/DictionarySearch';
-import MaterialUpload from '@/components/Right/MaterialUpload';
-import MaterialChat from '@/components/Right/MaterialChat';
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Menu, X } from "lucide-react";
+import { useStore } from "@/lib/store";
+import Header from "@/components/Header";
+import Panels from "@/components/Panels";
+import FileManager from "@/components/Left/FileManager";
+import SourceChat from "@/components/Left/SourceChat";
+import TitleBar from "@/components/Editor/TitleBar";
+import RichEditor from "@/components/Editor/RichEditor";
+import DictionarySearch from "@/components/Right/DictionarySearch";
+import MaterialUpload from "@/components/Right/MaterialUpload";
+import MaterialChat from "@/components/Right/MaterialChat";
 
 export default function EditorPage() {
   const params = useParams();
   const bookId = params.id as string;
-  
-  const { 
-    books, 
-    ui, 
-    setLeftTab, 
-    setRightTab, 
+
+  const {
+    books,
+    ui,
+    setLeftTab,
+    setRightTab,
     setRightSubTab,
     setRightPanelOpen,
-    initializeBooks
+    initializeBooks,
   } = useStore();
 
   const [isTablet, setIsTablet] = useState(false);
 
-  const book = books.find(b => b.id === bookId);
+  const book = books.find((b) => b.id === bookId);
 
   useEffect(() => {
-    console.log('Editor page loaded for book:', bookId);
-    console.log('Available books:', books.map(b => b.id));
-    
+    console.log("Editor page loaded for book:", bookId);
+    console.log(
+      "Available books:",
+      books.map((b) => b.id)
+    );
+
     const checkScreenSize = () => {
       const width = window.innerWidth;
       setIsTablet(width >= 768 && width < 1280);
     };
 
     checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, [bookId]);
 
   // ブックが見つからない場合、ダミーブックを生成
   useEffect(() => {
     if (!book && books.length === 0) {
-      console.log('No books found, initializing...');
+      console.log("No books found, initializing...");
       initializeBooks();
     }
   }, [book, books.length, initializeBooks]);
@@ -69,7 +72,7 @@ export default function EditorPage() {
             </p>
             <Button
               variant="default"
-              onClick={() => window.location.href = '/'}
+              onClick={() => (window.location.href = "/")}
               className="mt-4"
             >
               ホームに戻る
@@ -85,15 +88,15 @@ export default function EditorPage() {
     <div className="h-full flex flex-col">
       {/* タブ */}
       <div className="tab-list">
-        <button 
-          className={`tab-button ${ui.leftTab === 'files' ? 'active' : ''}`}
-          onClick={() => setLeftTab('files')}
+        <button
+          className={`tab-button ${ui.leftTab === "files" ? "active" : ""}`}
+          onClick={() => setLeftTab("files")}
         >
           ファイル管理
         </button>
-        <button 
-          className={`tab-button ${ui.leftTab === 'chat' ? 'active' : ''}`}
-          onClick={() => setLeftTab('chat')}
+        <button
+          className={`tab-button ${ui.leftTab === "chat" ? "active" : ""}`}
+          onClick={() => setLeftTab("chat")}
         >
           プロジェクトチャット
         </button>
@@ -101,7 +104,7 @@ export default function EditorPage() {
 
       {/* コンテンツ */}
       <div className="flex-1 overflow-hidden">
-        {ui.leftTab === 'files' ? (
+        {ui.leftTab === "files" ? (
           <FileManager bookId={bookId} book={book} />
         ) : (
           <SourceChat bookId={bookId} />
@@ -140,15 +143,15 @@ export default function EditorPage() {
 
       {/* 上位タブ */}
       <div className="tab-list">
-        <button 
-          className={`tab-button ${ui.rightTab === 'dict' ? 'active' : ''}`}
-          onClick={() => setRightTab('dict')}
+        <button
+          className={`tab-button ${ui.rightTab === "dict" ? "active" : ""}`}
+          onClick={() => setRightTab("dict")}
         >
           辞書・表現検索
         </button>
-        <button 
-          className={`tab-button ${ui.rightTab === 'material' ? 'active' : ''}`}
-          onClick={() => setRightTab('material')}
+        <button
+          className={`tab-button ${ui.rightTab === "material" ? "active" : ""}`}
+          onClick={() => setRightTab("material")}
         >
           資料検索
         </button>
@@ -156,28 +159,28 @@ export default function EditorPage() {
 
       {/* コンテンツ */}
       <div className="flex-1 overflow-hidden">
-        {ui.rightTab === 'dict' ? (
+        {ui.rightTab === "dict" ? (
           <DictionarySearch bookId={bookId} />
         ) : (
           <div className="h-full flex flex-col">
             {/* ミニタブ */}
             <div className="tab-list border-b-0">
-              <button 
-                className={`tab-button ${ui.rightSubTab === 'upload' ? 'active' : ''}`}
-                onClick={() => setRightSubTab('upload')}
+              <button
+                className={`tab-button ${ui.rightSubTab === "upload" ? "active" : ""}`}
+                onClick={() => setRightSubTab("upload")}
               >
                 資料アップロード
               </button>
-              <button 
-                className={`tab-button ${ui.rightSubTab === 'chat' ? 'active' : ''}`}
-                onClick={() => setRightSubTab('chat')}
+              <button
+                className={`tab-button ${ui.rightSubTab === "chat" ? "active" : ""}`}
+                onClick={() => setRightSubTab("chat")}
               >
                 資料チャット
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-hidden">
-              {ui.rightSubTab === 'upload' ? (
+              {ui.rightSubTab === "upload" ? (
                 <MaterialUpload bookId={bookId} />
               ) : (
                 <MaterialChat bookId={bookId} />
@@ -205,7 +208,7 @@ export default function EditorPage() {
           </Button>
         )}
       </div>
-      
+
       <div className="flex-1 overflow-hidden">
         <Panels
           leftPanel={leftPanel}

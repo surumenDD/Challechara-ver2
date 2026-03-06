@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Book, Tag } from 'lucide-react';
-import ChatWindow from '../Chat/ChatWindow';
-import Composer from '../Chat/Composer';
-import { useStore } from '@/lib/store';
-import { chatProvider } from '@/lib/chatProvider';
+import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search, Book, Tag } from "lucide-react";
+import ChatWindow from "../Chat/ChatWindow";
+import Composer from "../Chat/Composer";
+import { useStore } from "@/lib/store";
+import { chatProvider } from "@/lib/chatProvider";
 
 interface DictionarySearchProps {
   bookId: string;
@@ -16,29 +16,31 @@ interface DictionarySearchProps {
 // ダミー辞書データ
 const dummyDictionaryResults = [
   {
-    id: '1',
-    word: '美しい',
-    reading: 'うつくしい',
-    partOfSpeech: '形容詞',
-    meanings: ['形や色などが整っていて、見て快く感じるさま'],
-    examples: ['美しい景色', '美しい音楽'],
-    synonyms: ['麗しい', '綺麗な', '素晴らしい']
+    id: "1",
+    word: "美しい",
+    reading: "うつくしい",
+    partOfSpeech: "形容詞",
+    meanings: ["形や色などが整っていて、見て快く感じるさま"],
+    examples: ["美しい景色", "美しい音楽"],
+    synonyms: ["麗しい", "綺麗な", "素晴らしい"],
   },
   {
-    id: '2',
-    word: '静謐',
-    reading: 'せいひつ',
-    partOfSpeech: '名詞・形容動詞',
-    meanings: ['静かで落ち着いているさま'],
-    examples: ['静謐な空間', '静謐な午後'],
-    synonyms: ['静寂', '平穏', '閑静']
-  }
+    id: "2",
+    word: "静謐",
+    reading: "せいひつ",
+    partOfSpeech: "名詞・形容動詞",
+    meanings: ["静かで落ち着いているさま"],
+    examples: ["静謐な空間", "静謐な午後"],
+    synonyms: ["静寂", "平穏", "閑静"],
+  },
 ];
 
 export default function DictionarySearch({ bookId }: DictionarySearchProps) {
   const { dictChats, addDictChatMessage } = useStore();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<typeof dummyDictionaryResults>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<
+    typeof dummyDictionaryResults
+  >([]);
   const [isSearching, setIsSearching] = useState(false);
 
   const chatMessages = dictChats[bookId] || [];
@@ -51,21 +53,23 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
 
     try {
       // バックエンドAPIを使用して辞書検索
-      const response = await fetch(`http://localhost:8000/api/dictionary/search?query=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(
+        `http://localhost:8000/api/dictionary/search?query=${encodeURIComponent(searchQuery)}`
+      );
 
       if (response.ok) {
         const data = await response.json();
         setSearchResults(data.results);
       } else {
-        throw new Error('Dictionary search failed');
+        throw new Error("Dictionary search failed");
       }
     } catch (error) {
-      console.error('辞書検索エラー:', error);
+      console.error("辞書検索エラー:", error);
 
       // エラー時のフォールバック（既存のダミー検索）
-      const filtered = dummyDictionaryResults.filter(item =>
-        item.word.includes(searchQuery) ||
-        item.reading.includes(searchQuery)
+      const filtered = dummyDictionaryResults.filter(
+        (item) =>
+          item.word.includes(searchQuery) || item.reading.includes(searchQuery)
       );
 
       if (filtered.length === 0) {
@@ -74,12 +78,12 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
           {
             id: Date.now().toString(),
             word: searchQuery,
-            reading: 'よみかた',
-            partOfSpeech: '調査中',
+            reading: "よみかた",
+            partOfSpeech: "調査中",
             meanings: [`「${searchQuery}」に関する情報を調査中です`],
-            examples: ['例文準備中'],
-            synonyms: ['類語調査中']
-          }
+            examples: ["例文準備中"],
+            synonyms: ["類語調査中"],
+          },
         ]);
       } else {
         setSearchResults(filtered);
@@ -90,38 +94,47 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
   }, [searchQuery]);
 
   // エンターキーで検索
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  }, [handleSearch]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        handleSearch();
+      }
+    },
+    [handleSearch]
+  );
 
   // チャットメッセージ送信
-  const handleSendMessage = useCallback(async (content: string) => {
-    const userMessage = {
-      id: `msg-${Date.now()}`,
-      role: 'user' as const,
-      content,
-      ts: Date.now()
-    };
-    addDictChatMessage(bookId, userMessage);
-
-    try {
-      const response = await chatProvider.send([...chatMessages, userMessage], {
-        chatType: 'dictionary'
-      });
-      addDictChatMessage(bookId, response);
-    } catch (error) {
-      console.error('辞書チャット送信エラー:', error);
-      const errorMessage = {
+  const handleSendMessage = useCallback(
+    async (content: string) => {
+      const userMessage = {
         id: `msg-${Date.now()}`,
-        role: 'assistant' as const,
-        content: 'エラーが発生しました。もう一度お試しください。',
-        ts: Date.now()
+        role: "user" as const,
+        content,
+        ts: Date.now(),
       };
-      addDictChatMessage(bookId, errorMessage);
-    }
-  }, [bookId, chatMessages, addDictChatMessage]);
+      addDictChatMessage(bookId, userMessage);
+
+      try {
+        const response = await chatProvider.send(
+          [...chatMessages, userMessage],
+          {
+            chatType: "dictionary",
+          }
+        );
+        addDictChatMessage(bookId, response);
+      } catch (error) {
+        console.error("辞書チャット送信エラー:", error);
+        const errorMessage = {
+          id: `msg-${Date.now()}`,
+          role: "assistant" as const,
+          content: "エラーが発生しました。もう一度お試しください。",
+          ts: Date.now(),
+        };
+        addDictChatMessage(bookId, errorMessage);
+      }
+    },
+    [bookId, chatMessages, addDictChatMessage]
+  );
 
   return (
     <div className="h-full flex flex-col">
@@ -157,11 +170,16 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
         {searchResults.length > 0 && !isSearching && (
           <div className="max-h-48 overflow-y-auto space-y-3">
             {searchResults.map((result) => (
-              <div key={result.id} className="bg-white border border-gray-200 rounded-lg p-3">
+              <div
+                key={result.id}
+                className="bg-white border border-gray-200 rounded-lg p-3"
+              >
                 <div className="flex items-center gap-2 mb-2">
                   <Book className="w-4 h-4 text-blue-600" />
                   <span className="font-semibold">{result.word}</span>
-                  <span className="text-sm text-gray-600">({result.reading})</span>
+                  <span className="text-sm text-gray-600">
+                    ({result.reading})
+                  </span>
                   <span className="text-xs bg-gray-100 px-2 py-1 rounded">
                     {result.partOfSpeech}
                   </span>
@@ -169,17 +187,17 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
 
                 <div className="space-y-2 text-sm">
                   <div>
-                    <strong>意味:</strong> {result.meanings.join('、')}
+                    <strong>意味:</strong> {result.meanings.join("、")}
                   </div>
 
                   <div>
-                    <strong>例文:</strong> {result.examples.join('、')}
+                    <strong>例文:</strong> {result.examples.join("、")}
                   </div>
 
                   <div className="flex items-center gap-2">
                     <Tag className="w-3 h-3 text-gray-500" />
                     <span className="text-gray-600">類語:</span>
-                    <span>{result.synonyms.join('、')}</span>
+                    <span>{result.synonyms.join("、")}</span>
                   </div>
                 </div>
               </div>
@@ -192,7 +210,9 @@ export default function DictionarySearch({ bookId }: DictionarySearchProps) {
       <div className="flex-1 flex flex-col min-h-0">
         <div className="p-3 border-b border-gray-200">
           <h3 className="font-medium text-sm text-gray-700">補助チャット</h3>
-          <p className="text-xs text-gray-500 mt-1">表現や言い回しについて質問できます</p>
+          <p className="text-xs text-gray-500 mt-1">
+            表現や言い回しについて質問できます
+          </p>
         </div>
 
         <ChatWindow messages={chatMessages} />

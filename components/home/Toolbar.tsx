@@ -1,29 +1,23 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Grid, List, ArrowUpDown, Plus } from 'lucide-react';
-import { useStore } from '@/lib/store';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search, Grid, List, ArrowUpDown, Plus } from "lucide-react";
+import { useStore } from "@/lib/store";
 
 interface ToolbarProps {
   onNewBook: () => void;
 }
 
 export default function Toolbar({ onNewBook }: ToolbarProps) {
-  const { 
-    query, 
-    setQuery, 
-    viewMode, 
-    setViewMode, 
-    sortOrder, 
-    setSortOrder 
-  } = useStore();
-  
+  const { query, setQuery, viewMode, setViewMode, sortOrder, setSortOrder } =
+    useStore();
+
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === '/') {
+    if (e.key === "/") {
       e.preventDefault();
       const input = e.currentTarget as HTMLInputElement;
       input.focus();
@@ -31,21 +25,21 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
   };
 
   const sortOptions = [
-    { value: 'newest' as const, label: '新しい順' },
-    { value: 'oldest' as const, label: '古い順' },
-    { value: 'a-z' as const, label: 'タイトル A→Z' }
+    { value: "newest" as const, label: "新しい順" },
+    { value: "oldest" as const, label: "古い順" },
+    { value: "a-z" as const, label: "タイトル A→Z" },
   ];
 
-  const currentSortLabel = sortOptions.find(option => option.value === sortOrder)?.label || '新しい順';
+  const currentSortLabel =
+    sortOptions.find((option) => option.value === sortOrder)?.label ||
+    "新しい順";
 
   return (
     <div className="px-4 py-3 border-b border-gray-200 bg-white">
       <div className="flex items-center justify-between gap-4">
         {/* 左側: タブ */}
         <div className="tab-list">
-          <button className="tab-button active">
-            マイブック
-          </button>
+          <button className="tab-button active">マイブック</button>
         </div>
 
         {/* 右側: 検索・操作 */}
@@ -65,16 +59,16 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
           {/* 表示切替 */}
           <div className="flex border border-gray-300 rounded-lg overflow-hidden">
             <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('grid')}
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              onClick={() => setViewMode("grid")}
               className="rounded-none px-3"
               title="グリッド表示"
             >
               <Grid className="w-4 h-4" />
             </Button>
             <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('list')}
+              variant={viewMode === "list" ? "default" : "ghost"}
+              onClick={() => setViewMode("list")}
               className="rounded-none px-3 border-l border-gray-300"
               title="リスト表示"
             >
@@ -103,7 +97,9 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
                       setShowSortMenu(false);
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                      sortOrder === option.value ? 'bg-blue-50 text-blue-700' : ''
+                      sortOrder === option.value
+                        ? "bg-blue-50 text-blue-700"
+                        : ""
                     }`}
                   >
                     {option.label}
@@ -127,7 +123,7 @@ export default function Toolbar({ onNewBook }: ToolbarProps) {
 
       {/* クリック外しでメニューを閉じる */}
       {showSortMenu && (
-        <div 
+        <div
           className="fixed inset-0 z-5"
           onClick={() => setShowSortMenu(false)}
         />

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useStore } from '@/lib/store';
-import ChatWindow from '../Chat/ChatWindow';
-import Composer from '../Chat/Composer';
-import ChipList from '../Common/ChipList';
-import { chatProvider } from '@/lib/chatProvider';
+import { useStore } from "@/lib/store";
+import ChatWindow from "../Chat/ChatWindow";
+import Composer from "../Chat/Composer";
+import ChipList from "../Common/ChipList";
+import { chatProvider } from "@/lib/chatProvider";
 
 interface SourceChatProps {
   bookId: string;
@@ -16,15 +16,15 @@ export default function SourceChat({ bookId }: SourceChatProps) {
     selectedEpisodeIds,
     setSelectedEpisodeIds,
     sourceChats,
-    addSourceChatMessage
+    addSourceChatMessage,
   } = useStore();
 
-  const book = books.find(b => b.id === bookId);
+  const book = books.find((b) => b.id === bookId);
   const episodes = book?.episodes || [];
   const chatMessages = sourceChats[bookId] || [];
 
   // 選択されたエピソードの情報
-  const selectedEpisodes = episodes.filter(episode =>
+  const selectedEpisodes = episodes.filter((episode) =>
     selectedEpisodeIds.includes(episode.id)
   );
 
@@ -33,27 +33,29 @@ export default function SourceChat({ bookId }: SourceChatProps) {
     // ユーザーメッセージを追加
     const userMessage = {
       id: `msg-${Date.now()}`,
-      role: 'user' as const,
+      role: "user" as const,
       content,
-      ts: Date.now()
+      ts: Date.now(),
     };
     addSourceChatMessage(bookId, userMessage);
 
     try {
       // AIレスポンスを取得（選択されたエピソードの内容をコンテキストとして使用）
-      const sources = [`project:${bookId}:${selectedEpisodes.map(e => e.id).join(',')}`];
+      const sources = [
+        `project:${bookId}:${selectedEpisodes.map((e) => e.id).join(",")}`,
+      ];
       const response = await chatProvider.send([...chatMessages, userMessage], {
         sources,
-        chatType: 'project'
+        chatType: "project",
       });
       addSourceChatMessage(bookId, response);
     } catch (error) {
-      console.error('チャット送信エラー:', error);
+      console.error("チャット送信エラー:", error);
       const errorMessage = {
         id: `msg-${Date.now()}`,
-        role: 'assistant' as const,
-        content: 'エラーが発生しました。もう一度お試しください。',
-        ts: Date.now()
+        role: "assistant" as const,
+        content: "エラーが発生しました。もう一度お試しください。",
+        ts: Date.now(),
       };
       addSourceChatMessage(bookId, errorMessage);
     }
@@ -61,7 +63,7 @@ export default function SourceChat({ bookId }: SourceChatProps) {
 
   // チップ削除
   const handleRemoveSource = (sourceId: string) => {
-    const newSelection = selectedEpisodeIds.filter(id => id !== sourceId);
+    const newSelection = selectedEpisodeIds.filter((id) => id !== sourceId);
     setSelectedEpisodeIds(newSelection);
   };
 
@@ -73,11 +75,13 @@ export default function SourceChat({ bookId }: SourceChatProps) {
 
         {/* 使用中エピソードチップ */}
         <ChipList
-          items={selectedEpisodes.slice(0, 5).map(episode => ({
+          items={selectedEpisodes.slice(0, 5).map((episode) => ({
             id: episode.id,
-            label: episode.title
+            label: episode.title,
           }))}
-          extraCount={selectedEpisodes.length > 5 ? selectedEpisodes.length - 5 : 0}
+          extraCount={
+            selectedEpisodes.length > 5 ? selectedEpisodes.length - 5 : 0
+          }
           onRemove={handleRemoveSource}
           maxWidth="100%"
         />

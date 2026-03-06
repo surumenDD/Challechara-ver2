@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText } from 'lucide-react';
-import { useStore } from '@/lib/store';
-import { updateEpisode } from '@/lib/api/episodes';
+import { useState, useEffect, useRef } from "react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FileText } from "lucide-react";
+import { useStore } from "@/lib/store";
+import { updateEpisode } from "@/lib/api/episodes";
 
 interface TitleBarProps {
   bookId: string;
@@ -19,15 +25,17 @@ export default function TitleBar({ bookId }: TitleBarProps) {
     updateBook,
     refreshBookFromBackend,
   } = useStore();
-  
-  const [title, setTitle] = useState('');
-  const [episodeTitle, setEpisodeTitle] = useState('');
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'pending'>('saved');
+
+  const [title, setTitle] = useState("");
+  const [episodeTitle, setEpisodeTitle] = useState("");
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "pending">(
+    "saved"
+  );
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const book = books.find(b => b.id === bookId);
+  const book = books.find((b) => b.id === bookId);
   const episodes = book?.episodes || [];
-  const activeEpisode = episodes.find(e => e.id === activeEpisodeId);
+  const activeEpisode = episodes.find((e) => e.id === activeEpisodeId);
 
   useEffect(() => {
     if (book) {
@@ -45,16 +53,16 @@ export default function TitleBar({ bookId }: TitleBarProps) {
   useEffect(() => {
     if (!book || title === book.title) return;
 
-    setSaveStatus('pending');
-    
+    setSaveStatus("pending");
+
     const timeoutId = setTimeout(async () => {
-      setSaveStatus('saving');
+      setSaveStatus("saving");
       try {
         await updateBook(bookId, { title });
-        setSaveStatus('saved');
+        setSaveStatus("saved");
       } catch (error) {
-        console.error('Failed to update book title:', error);
-        setSaveStatus('saved');
+        console.error("Failed to update book title:", error);
+        setSaveStatus("saved");
       }
     }, 1000);
 
@@ -74,7 +82,7 @@ export default function TitleBar({ bookId }: TitleBarProps) {
         await updateEpisode(activeEpisode.id, { title: episodeTitle });
         await refreshBookFromBackend(bookId);
       } catch (error) {
-        console.error('Failed to update episode title:', error);
+        console.error("Failed to update episode title:", error);
       }
     }, 1000);
 
@@ -92,27 +100,27 @@ export default function TitleBar({ bookId }: TitleBarProps) {
 
   const getSaveStatusText = () => {
     switch (saveStatus) {
-      case 'saving':
-        return '保存中...';
-      case 'pending':
-        return '未保存';
-      case 'saved':
-        return '保存済み';
+      case "saving":
+        return "保存中...";
+      case "pending":
+        return "未保存";
+      case "saved":
+        return "保存済み";
       default:
-        return '';
+        return "";
     }
   };
 
   const getSaveStatusColor = () => {
     switch (saveStatus) {
-      case 'saving':
-        return 'text-blue-600';
-      case 'pending':
-        return 'text-orange-600';
-      case 'saved':
-        return 'text-green-600';
+      case "saving":
+        return "text-blue-600";
+      case "pending":
+        return "text-orange-600";
+      case "saved":
+        return "text-green-600";
       default:
-        return 'text-gray-500';
+        return "text-gray-500";
     }
   };
 
@@ -127,7 +135,7 @@ export default function TitleBar({ bookId }: TitleBarProps) {
           className="flex-1 text-lg font-medium"
           variant="standard"
         />
-        
+
         <div className={`text-sm font-medium ${getSaveStatusColor()}`}>
           {getSaveStatusText()}
         </div>
@@ -136,9 +144,12 @@ export default function TitleBar({ bookId }: TitleBarProps) {
       {/* エピソード管理 */}
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-gray-500" />
-        
+
         {episodes.length > 0 ? (
-          <Select value={activeEpisodeId || ''} onValueChange={handleEpisodeChange}>
+          <Select
+            value={activeEpisodeId || ""}
+            onValueChange={handleEpisodeChange}
+          >
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="エピソードを選択" />
             </SelectTrigger>
@@ -169,7 +180,6 @@ export default function TitleBar({ bookId }: TitleBarProps) {
           />
         </div>
       )}
-
     </div>
   );
 }
