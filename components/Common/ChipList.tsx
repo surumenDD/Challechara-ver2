@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { X } from 'lucide-react';
+import { X } from "lucide-react";
 
 interface ChipItem {
   id: string;
@@ -14,7 +14,12 @@ interface ChipListProps {
   maxWidth?: string;
 }
 
-export default function ChipList({ items, extraCount = 0, onRemove, maxWidth = "240px" }: ChipListProps) {
+export default function ChipList({
+  items,
+  extraCount = 0,
+  onRemove,
+  maxWidth = "240px",
+}: ChipListProps) {
   if (items.length === 0 && extraCount === 0) {
     return null;
   }
@@ -37,7 +42,7 @@ export default function ChipList({ items, extraCount = 0, onRemove, maxWidth = "
           )}
         </div>
       ))}
-      
+
       {extraCount > 0 && (
         <div className="chip">
           <span>+{extraCount}</span>

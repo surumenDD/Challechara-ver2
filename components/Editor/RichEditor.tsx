@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Download, X } from 'lucide-react';
-import { useStore } from '@/lib/store';
-import { updateEpisode } from '@/lib/api/episodes';
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Download, X } from "lucide-react";
+import { useStore } from "@/lib/store";
+import { updateEpisode } from "@/lib/api/episodes";
 
 interface RichEditorProps {
   bookId: string;
@@ -14,85 +14,101 @@ interface RichEditorProps {
 export default function RichEditor({ bookId }: RichEditorProps) {
   const { books, activeEpisodeId, refreshBookFromBackend } = useStore();
   const [showRubyModal, setShowRubyModal] = useState(false);
-  const [rubyText, setRubyText] = useState('');
-  const [content, setContent] = useState('');
+  const [rubyText, setRubyText] = useState("");
+  const [content, setContent] = useState("");
   const [selectionStart, setSelectionStart] = useState(0);
   const [selectionEnd, setSelectionEnd] = useState(0);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const book = books.find(b => b.id === bookId);
-  const activeEpisode = book?.episodes?.find(e => e.id === activeEpisodeId);
+  const book = books.find((b) => b.id === bookId);
+  const activeEpisode = book?.episodes?.find((e) => e.id === activeEpisodeId);
 
   // セキュリティ定数
   const MAX_CONTENT_LENGTH = 1000000; // 100万文字
   const MAX_RUBY_LENGTH = 50;
   const MAX_SELECTION_LENGTH = 100;
-  
+
   // HTMLエスケープ関数
   const escapeHtml = (text: string): string => {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   };
-  
+
   // HTMLアンエスケープ関数（安全版）
   const unescapeHtml = (html: string): string => {
-    const txt = document.createElement('textarea');
+    const txt = document.createElement("textarea");
     txt.innerHTML = html;
     return txt.value;
   };
 
   // HTMLからなろう記法のプレーンテキストに変換
   const convertFromHtml = useCallback((html: string): string => {
-    if (!html || html.length > MAX_CONTENT_LENGTH) return '';
-    
+    if (!html || html.length > MAX_CONTENT_LENGTH) return "";
+
     let text = html;
-    
+
     // <ruby>タグをルビ記法に変換（長さ制限付き）
-    text = text.replace(/<ruby>([^<]{1,100})<rt>([^<]{1,50})<\/rt><\/ruby>/g, '|$1《$2》');
-    
+    text = text.replace(
+      /<ruby>([^<]{1,100})<rt>([^<]{1,50})<\/rt><\/ruby>/g,
+      "|$1《$2》"
+    );
+
     // 傍点を記法に変換（長さ制限付き）- 各文字に《・》をつける形式に変換
-    text = text.replace(/<em class="sesame-dot">([^<]{1,100})<\/em>/g, (match, content) => {
-      return content.split('').map((char: string) => char + '《・》').join('');
-    });
-    
+    text = text.replace(
+      /<em class="sesame-dot">([^<]{1,100})<\/em>/g,
+      (match, content) => {
+        return content
+          .split("")
+          .map((char: string) => char + "《・》")
+          .join("");
+      }
+    );
+
     // <br>タグを改行に
-    text = text.replace(/<br\s*\/?>/gi, '\n');
-    
+    text = text.replace(/<br\s*\/?>/gi, "\n");
+
     // <p>タグを段落区切りに
-    text = text.replace(/<\/p>\s*<p>/gi, '\n\n');
-    text = text.replace(/<\/?p>/gi, '');
-    
+    text = text.replace(/<\/p>\s*<p>/gi, "\n\n");
+    text = text.replace(/<\/?p>/gi, "");
+
     // その他のHTMLタグを除去
-    text = text.replace(/<[^>]+>/g, '');
-    
+    text = text.replace(/<[^>]+>/g, "");
+
     // HTMLエンティティをデコード（安全版）
     return unescapeHtml(text);
   }, []);
 
   // なろう記法のプレーンテキストをHTMLに変換
   const convertToHtml = useCallback((text: string): string => {
-    if (!text || text.length > MAX_CONTENT_LENGTH) return '<p></p>';
-    
+    if (!text || text.length > MAX_CONTENT_LENGTH) return "<p></p>";
+
     // まずHTMLエスケープ
     let html = escapeHtml(text);
-    
+
     // ルビ記法: |漢字《かんじ》 → <ruby>漢字<rt>かんじ</rt></ruby>（長さ制限付き）
-    html = html.replace(/\|([^《]{1,100})《([^》]{1,50})》/g, '<ruby>$1<rt>$2</rt></ruby>');
-    
+    html = html.replace(
+      /\|([^《]{1,100})《([^》]{1,50})》/g,
+      "<ruby>$1<rt>$2</rt></ruby>"
+    );
+
     // 傍点記法: 強《・》調《・》 → <em class="sesame-dot">強調</em>
     // 連続する「文字《・》」パターンを検出してまとめる
     html = html.replace(/(.《・》)+/g, (match) => {
-      const chars = match.match(/(.)《・》/g)?.map(m => m.charAt(0)).join('') || '';
+      const chars =
+        match
+          .match(/(.)《・》/g)
+          ?.map((m) => m.charAt(0))
+          .join("") || "";
       return `<em class="sesame-dot">${chars}</em>`;
     });
-    
+
     // 段落分け（改行2回）
-    const paragraphs = html.split('\n\n').slice(0, 10000); // 段落数制限
+    const paragraphs = html.split("\n\n").slice(0, 10000); // 段落数制限
     return paragraphs
-      .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
-      .join('');
+      .map((paragraph) => `<p>${paragraph.replace(/\n/g, "<br>")}</p>`)
+      .join("");
   }, []);
 
   // アクティブエピソード変更時に内容を更新
@@ -100,34 +116,34 @@ export default function RichEditor({ bookId }: RichEditorProps) {
     if (activeEpisode) {
       setContent(convertFromHtml(activeEpisode.content));
     } else {
-      setContent('');
+      setContent("");
     }
   }, [activeEpisode?.id, activeEpisode?.content, convertFromHtml]);
 
   // 自動保存処理
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
-    
+
     // 入力サイズ制限
     if (newContent.length > MAX_CONTENT_LENGTH) {
       alert(`文字数制限: ${MAX_CONTENT_LENGTH.toLocaleString()}文字まで`);
       return;
     }
-    
+
     setContent(newContent);
 
     if (activeEpisode) {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      
+
       saveTimeoutRef.current = setTimeout(async () => {
         const htmlContent = convertToHtml(newContent);
         try {
           await updateEpisode(activeEpisode.id, { content: htmlContent });
           await refreshBookFromBackend(bookId);
         } catch (error) {
-          console.error('Failed to save episode:', error);
+          console.error("Failed to save episode:", error);
         }
       }, 1000);
     }
@@ -149,59 +165,61 @@ export default function RichEditor({ bookId }: RichEditorProps) {
     const start = textareaRef.current.selectionStart;
     const end = textareaRef.current.selectionEnd;
     const selectedText = content.substring(start, end);
-    
+
     if (selectedText && selectedText.trim()) {
       setSelectionStart(start);
       setSelectionEnd(end);
       setShowRubyModal(true);
     } else {
-      alert('ルビを振りたい文字を選択してください');
+      alert("ルビを振りたい文字を選択してください");
     }
   }, [content, activeEpisode]);
 
   const applyRuby = useCallback(() => {
     if (!rubyText.trim()) return;
-    
+
     // ルビの長さ制限
     if (rubyText.length > MAX_RUBY_LENGTH) {
       alert(`ルビは${MAX_RUBY_LENGTH}文字以内にしてください`);
       return;
     }
-    
+
     const selectedText = content.substring(selectionStart, selectionEnd);
-    
+
     // 選択テキストの長さ制限
     if (selectedText.length > MAX_SELECTION_LENGTH) {
-      alert(`ルビを振るテキストは${MAX_SELECTION_LENGTH}文字以内にしてください`);
+      alert(
+        `ルビを振るテキストは${MAX_SELECTION_LENGTH}文字以内にしてください`
+      );
       return;
     }
-    
+
     const rubyNotation = `|${selectedText}《${rubyText}》`;
     const before = content.substring(0, selectionStart);
     const after = content.substring(selectionEnd);
     const newContent = before + rubyNotation + after;
-    
+
     setContent(newContent);
     setShowRubyModal(false);
-    setRubyText('');
-    
+    setRubyText("");
+
     // 自動保存をトリガー
     if (activeEpisode) {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      
+
       saveTimeoutRef.current = setTimeout(async () => {
         const htmlContent = convertToHtml(newContent);
         try {
           await updateEpisode(activeEpisode.id, { content: htmlContent });
           await refreshBookFromBackend(bookId);
         } catch (error) {
-          console.error('Failed to save episode:', error);
+          console.error("Failed to save episode:", error);
         }
       }, 500);
     }
-    
+
     // カーソル位置を調整
     setTimeout(() => {
       if (textareaRef.current) {
@@ -210,7 +228,16 @@ export default function RichEditor({ bookId }: RichEditorProps) {
         textareaRef.current.setSelectionRange(newPosition, newPosition);
       }
     }, 0);
-  }, [content, selectionStart, selectionEnd, rubyText, activeEpisode, bookId, convertToHtml, refreshBookFromBackend]);
+  }, [
+    content,
+    selectionStart,
+    selectionEnd,
+    rubyText,
+    activeEpisode,
+    bookId,
+    convertToHtml,
+    refreshBookFromBackend,
+  ]);
 
   // 傍点機能
   const handleAddEmphasis = useCallback(() => {
@@ -219,27 +246,32 @@ export default function RichEditor({ bookId }: RichEditorProps) {
     const start = textareaRef.current.selectionStart;
     const end = textareaRef.current.selectionEnd;
     const selectedText = content.substring(start, end);
-    
+
     if (selectedText && selectedText.trim()) {
       // 選択テキストの長さ制限
       if (selectedText.length > MAX_SELECTION_LENGTH) {
-        alert(`傍点を付けるテキストは${MAX_SELECTION_LENGTH}文字以内にしてください`);
+        alert(
+          `傍点を付けるテキストは${MAX_SELECTION_LENGTH}文字以内にしてください`
+        );
         return;
       }
-      
+
       // 漢字のみに《・》をつける形式に変換
-      const emphasisNotation = selectedText.split('').map(char => {
-        // 漢字判定: Unicode範囲で判定
-        const isKanji = /[\u4E00-\u9FFF\u3400-\u4DBF]/.test(char);
-        return isKanji ? char + '《・》' : char;
-      }).join('');
-      
+      const emphasisNotation = selectedText
+        .split("")
+        .map((char) => {
+          // 漢字判定: Unicode範囲で判定
+          const isKanji = /[\u4E00-\u9FFF\u3400-\u4DBF]/.test(char);
+          return isKanji ? char + "《・》" : char;
+        })
+        .join("");
+
       const before = content.substring(0, start);
       const after = content.substring(end);
       const newContent = before + emphasisNotation + after;
-      
+
       setContent(newContent);
-      
+
       // カーソル位置を調整
       setTimeout(() => {
         if (textareaRef.current) {
@@ -249,7 +281,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
         }
       }, 0);
     } else {
-      alert('傍点をつけたい文字を選択してください');
+      alert("傍点をつけたい文字を選択してください");
     }
   }, [content, activeEpisode]);
 
@@ -260,22 +292,24 @@ export default function RichEditor({ bookId }: RichEditorProps) {
   // なろう形式でエクスポート
   const handleExportForNarou = useCallback(() => {
     if (!activeEpisode) return;
-    
+
     // すでになろう記法なのでそのまま使用
     const exportContent = content.trim();
-    
+
     // ファイル名をサニタイズ（パストラバーサル対策）
     const sanitizeFilename = (name: string) => {
-      return name.replace(/[<>:"\/\\|?*\x00-\x1f]/g, '_').substring(0, 255);
+      return name.replace(/[<>:"\/\\|?*\x00-\x1f]/g, "_").substring(0, 255);
     };
-    
+
     // ファイルダウンロード（UTF-8 BOM付き - なろうで文字化け防止）
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + exportContent], { type: 'text/plain;charset=utf-8' });
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + exportContent], {
+      type: "text/plain;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = sanitizeFilename(activeEpisode.title || 'episode') + '.txt';
+    a.download = sanitizeFilename(activeEpisode.title || "episode") + ".txt";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -338,12 +372,17 @@ export default function RichEditor({ bookId }: RichEditorProps) {
           value={content}
           onChange={handleChange}
           disabled={!activeEpisode}
-          placeholder={activeEpisode ? "本文を入力してください...\n\n改行2回で段落が分かれます。\n\nルビ: |漢字《かんじ》\n傍点: 強《・》調《・》" : "エピソードを選択してください..."}
+          placeholder={
+            activeEpisode
+              ? "本文を入力してください...\n\n改行2回で段落が分かれます。\n\nルビ: |漢字《かんじ》\n傍点: 強《・》調《・》"
+              : "エピソードを選択してください..."
+          }
           className="w-full h-full p-8 resize-none focus:outline-none font-serif text-base leading-loose border-none disabled:bg-gray-50 disabled:text-gray-400"
           style={{
-            fontSize: '16px',
-            lineHeight: '2',
-            fontFamily: "'Noto Serif JP', 'Yu Mincho', YuMincho, 'Hiragino Mincho ProN', 'MS PMincho', serif"
+            fontSize: "16px",
+            lineHeight: "2",
+            fontFamily:
+              "'Noto Serif JP', 'Yu Mincho', YuMincho, 'Hiragino Mincho ProN', 'MS PMincho', serif",
           }}
         />
       </div>
@@ -351,7 +390,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
       {/* フッター */}
       <div className="p-3 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
         <span className="text-xs text-gray-500">
-          {activeEpisode ? '自動保存中...' : ''}
+          {activeEpisode ? "自動保存中..." : ""}
         </span>
         <span className="text-sm text-gray-600">
           {getCharCount().toLocaleString()} 文字
@@ -382,7 +421,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
                   onChange={(e) => setRubyText(e.target.value)}
                   placeholder="ふりがなを入力..."
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       applyRuby();
                     }
                   }}
@@ -393,10 +432,7 @@ export default function RichEditor({ bookId }: RichEditorProps) {
               </div>
 
               <div className="flex gap-2 justify-end">
-                <Button
-                  variant="ghost"
-                  onClick={() => setShowRubyModal(false)}
-                >
+                <Button variant="ghost" onClick={() => setShowRubyModal(false)}>
                   キャンセル
                 </Button>
                 <Button

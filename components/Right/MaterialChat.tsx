@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useStore } from '@/lib/store';
-import ChatWindow from '../Chat/ChatWindow';
-import Composer from '../Chat/Composer';
-import ChipList from '../Common/ChipList';
-import { chatProvider } from '@/lib/chatProvider';
+import { useStore } from "@/lib/store";
+import ChatWindow from "../Chat/ChatWindow";
+import Composer from "../Chat/Composer";
+import ChipList from "../Common/ChipList";
+import { chatProvider } from "@/lib/chatProvider";
 
 interface MaterialChatProps {
   bookId: string;
@@ -16,15 +16,15 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
     selectedMaterialIds,
     setSelectedMaterialIds,
     materialChats,
-    addMaterialChatMessage
+    addMaterialChatMessage,
   } = useStore();
 
-  const book = books.find(b => b.id === bookId);
+  const book = books.find((b) => b.id === bookId);
   const bookMaterials = book?.materials || [];
   const chatMessages = materialChats[bookId] || [];
 
   // 選択された資料の情報
-  const selectedMaterials = bookMaterials.filter(material =>
+  const selectedMaterials = bookMaterials.filter((material) =>
     selectedMaterialIds.includes(material.id)
   );
 
@@ -33,27 +33,29 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
     // ユーザーメッセージを追加
     const userMessage = {
       id: `msg-${Date.now()}`,
-      role: 'user' as const,
+      role: "user" as const,
       content,
-      ts: Date.now()
+      ts: Date.now(),
     };
     addMaterialChatMessage(bookId, userMessage);
 
     try {
       // AIレスポンスを取得
-      const sources = [`material:${bookId}:${selectedMaterials.map(m => m.id).join(',')}`];
+      const sources = [
+        `material:${bookId}:${selectedMaterials.map((m) => m.id).join(",")}`,
+      ];
       const response = await chatProvider.send([...chatMessages, userMessage], {
         sources,
-        chatType: 'material'
+        chatType: "material",
       });
       addMaterialChatMessage(bookId, response);
     } catch (error) {
-      console.error('資料チャット送信エラー:', error);
+      console.error("資料チャット送信エラー:", error);
       const errorMessage = {
         id: `msg-${Date.now()}`,
-        role: 'assistant' as const,
-        content: 'エラーが発生しました。もう一度お試しください。',
-        ts: Date.now()
+        role: "assistant" as const,
+        content: "エラーが発生しました。もう一度お試しください。",
+        ts: Date.now(),
       };
       addMaterialChatMessage(bookId, errorMessage);
     }
@@ -61,7 +63,7 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
 
   // チップ削除
   const handleRemoveMaterial = (materialId: string) => {
-    const newSelection = selectedMaterialIds.filter(id => id !== materialId);
+    const newSelection = selectedMaterialIds.filter((id) => id !== materialId);
     setSelectedMaterialIds(newSelection);
   };
 
@@ -73,11 +75,13 @@ export default function MaterialChat({ bookId }: MaterialChatProps) {
 
         {/* 使用中資料チップ */}
         <ChipList
-          items={selectedMaterials.slice(0, 5).map(material => ({
+          items={selectedMaterials.slice(0, 5).map((material) => ({
             id: material.id,
-            label: material.title
+            label: material.title,
           }))}
-          extraCount={selectedMaterials.length > 5 ? selectedMaterials.length - 5 : 0}
+          extraCount={
+            selectedMaterials.length > 5 ? selectedMaterials.length - 5 : 0
+          }
           onRemove={handleRemoveMaterial}
           maxWidth="100%"
         />

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Send } from 'lucide-react';
+import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Send } from "lucide-react";
 
 interface ComposerProps {
   onSend: (content: string) => void;
@@ -10,8 +10,12 @@ interface ComposerProps {
   placeholder?: string;
 }
 
-export default function Composer({ onSend, disabled = false, placeholder = "メッセージを入力..." }: ComposerProps) {
-  const [content, setContent] = useState('');
+export default function Composer({
+  onSend,
+  disabled = false,
+  placeholder = "メッセージを入力...",
+}: ComposerProps) {
+  const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = useCallback(async () => {
@@ -19,23 +23,26 @@ export default function Composer({ onSend, disabled = false, placeholder = "メ�
     if (!trimmedContent || disabled || isSubmitting) return;
 
     setIsSubmitting(true);
-    setContent('');
+    setContent("");
 
     try {
       await onSend(trimmedContent);
     } catch (error) {
-      console.error('メッセージ送信エラー:', error);
+      console.error("メッセージ送信エラー:", error);
     } finally {
       setIsSubmitting(false);
     }
   }, [content, disabled, isSubmitting, onSend]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  }, [handleSubmit]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    },
+    [handleSubmit]
+  );
 
   return (
     <div className="p-4 border-t border-gray-200 bg-white">

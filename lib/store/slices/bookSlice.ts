@@ -1,19 +1,25 @@
-import { createBookRequest, deleteBookRequest, fetchBookDetail, fetchBooksWithDetails, updateBookRequest } from '@/lib/api/books';
-import { BookSlice, StoreSlice } from './types';
+import {
+  createBookRequest,
+  deleteBookRequest,
+  fetchBookDetail,
+  fetchBooksWithDetails,
+  updateBookRequest,
+} from "@/lib/api/books";
+import { BookSlice, StoreSlice } from "./types";
 
 export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
   books: [],
   activeEpisodeId: null,
   selectedEpisodeIds: [],
   selectedMaterialIds: [],
-  sortOrder: 'newest',
-  viewMode: 'grid',
-  query: '',
+  sortOrder: "newest",
+  viewMode: "grid",
+  query: "",
 
   setSortOrder: (order) => set({ sortOrder: order }),
   setViewMode: (mode) => set({ viewMode: mode }),
   setQuery: (query) => set({ query }),
-  
+
   setActiveEpisodeId: (episodeId) => set({ activeEpisodeId: episodeId }),
   setSelectedEpisodeIds: (ids) => set({ selectedEpisodeIds: ids }),
   setSelectedMaterialIds: (ids) => set({ selectedMaterialIds: ids }),
@@ -26,7 +32,7 @@ export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
       set((state) => ({ books: [...state.books, newBook] }));
       return newBook;
     } catch (error) {
-      console.error('Error creating book:', error);
+      console.error("Error creating book:", error);
       throw error;
     }
   },
@@ -36,7 +42,7 @@ export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
       const books = await fetchBooksWithDetails();
       set({ books });
     } catch (error) {
-      console.error('Error loading books from backend:', error);
+      console.error("Error loading books from backend:", error);
       throw error;
     }
   },
@@ -45,10 +51,12 @@ export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
     try {
       const updatedBook = await fetchBookDetail(bookId);
       set((state) => ({
-        books: state.books.map((book) => (book.id === bookId ? updatedBook : book))
+        books: state.books.map((book) =>
+          book.id === bookId ? updatedBook : book
+        ),
       }));
     } catch (error) {
-      console.error('Error refreshing book from backend:', error);
+      console.error("Error refreshing book from backend:", error);
       throw error;
     }
   },
@@ -57,10 +65,10 @@ export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
     try {
       const updatedBook = await updateBookRequest(bookId, updates);
       set((state) => ({
-        books: state.books.map((b) => (b.id === bookId ? updatedBook : b))
+        books: state.books.map((b) => (b.id === bookId ? updatedBook : b)),
       }));
     } catch (error) {
-      console.error('Error updating book:', error);
+      console.error("Error updating book:", error);
       throw error;
     }
   },
@@ -68,9 +76,11 @@ export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
   deleteBook: async (bookId) => {
     try {
       await deleteBookRequest(bookId);
-      set((state) => ({ books: state.books.filter((book) => book.id !== bookId) }));
+      set((state) => ({
+        books: state.books.filter((book) => book.id !== bookId),
+      }));
     } catch (error) {
-      console.error('Failed to delete book from backend:', error);
+      console.error("Failed to delete book from backend:", error);
       throw error;
     }
   },
@@ -79,10 +89,10 @@ export const createBookSlice: StoreSlice<BookSlice> = (set, get) => ({
     const { loadBooksFromBackend } = get();
     loadBooksFromBackend()
       .then(() => {
-        console.log('Books loaded from backend successfully');
+        console.log("Books loaded from backend successfully");
       })
       .catch((error) => {
-        console.error('Failed to load from backend:', error);
+        console.error("Failed to load from backend:", error);
       });
-  }
+  },
 });

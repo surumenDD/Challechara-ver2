@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { X, BookOpen } from 'lucide-react';
-import { useStore } from '@/lib/store';
-import { exportAsTxt } from '@/lib/file';
-import Header from '@/components/Header';
-import Toolbar from '@/components/home/Toolbar';
-import BookGrid from '@/components/home/BookGrid';
-import BookList from '@/components/home/BookList';
-import EmptyState from '@/components/Common/EmptyState';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { X, BookOpen } from "lucide-react";
+import { useStore } from "@/lib/store";
+import { exportAsTxt } from "@/lib/file";
+import Header from "@/components/Header";
+import Toolbar from "@/components/home/Toolbar";
+import BookGrid from "@/components/home/BookGrid";
+import BookList from "@/components/home/BookList";
+import EmptyState from "@/components/Common/EmptyState";
 
 export default function HomePage() {
   const router = useRouter();
@@ -23,11 +23,11 @@ export default function HomePage() {
     createBook,
     updateBook,
     deleteBook,
-    initializeBooks
+    initializeBooks,
   } = useStore();
 
   const [showNewBookDialog, setShowNewBookDialog] = useState(false);
-  const [newBookTitle, setNewBookTitle] = useState('');
+  const [newBookTitle, setNewBookTitle] = useState("");
 
   // 初期データ読み込み
   useEffect(() => {
@@ -36,22 +36,24 @@ export default function HomePage() {
 
   // デバッグ用：ブック数をログ出力
   useEffect(() => {
-    console.log('Books count:', books.length);
-    console.log('Books:', books);
+    console.log("Books count:", books.length);
+    console.log("Books:", books);
   }, [books]);
 
   // フィルタリング・ソート
   const filteredAndSortedBooks = books
-    .filter(book =>
-      book.title.toLowerCase().includes(query.toLowerCase())
-    )
+    .filter((book) => book.title.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => {
       switch (sortOrder) {
-        case 'newest':
-          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-        case 'oldest':
-          return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
-        case 'a-z':
+        case "newest":
+          return (
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+          );
+        case "a-z":
           return a.title.localeCompare(b.title);
         default:
           return 0;
@@ -68,49 +70,56 @@ export default function HomePage() {
 
     try {
       // バックエンドAPIを使用してブックを作成
-      const newBook = await createBook(newBookTitle.trim(), '📖');
+      const newBook = await createBook(newBookTitle.trim(), "📖");
 
       setShowNewBookDialog(false);
-      setNewBookTitle('');
+      setNewBookTitle("");
 
       // 作成したブックを開く
       router.push(`/book/${newBook.id}`);
     } catch (error) {
-      console.error('Error creating book:', error);
-      alert('ブックの作成中にエラーが発生しました。もう一度お試しください。');
+      console.error("Error creating book:", error);
+      alert("ブックの作成中にエラーが発生しました。もう一度お試しください。");
     }
   };
 
   // ブックアクション
   const handleBookClick = (bookId: string) => {
-    console.log('Navigating to book:', bookId);
+    console.log("Navigating to book:", bookId);
     router.push(`/book/${bookId}`);
   };
 
   const handleBookAction = async (bookId: string, action: string) => {
-    const book = books.find(b => b.id === bookId);
+    const book = books.find((b) => b.id === bookId);
     if (!book) return;
 
     switch (action) {
-      case 'open':
+      case "open":
         router.push(`/book/${bookId}`);
         break;
 
-      case 'rename':
-        const newTitle = prompt('新しいタイトルを入力してください:', book.title);
+      case "rename":
+        const newTitle = prompt(
+          "新しいタイトルを入力してください:",
+          book.title
+        );
         if (newTitle && newTitle.trim() !== book.title) {
           updateBook(bookId, { title: newTitle.trim() });
         }
         break;
 
-      case 'export':
+      case "export":
         const allEpisodes = book.episodes || [];
-        const content = allEpisodes.map(ep => `${ep.title}\n\n${ep.content}`).join('\n\n---\n\n');
+        const content = allEpisodes
+          .map((ep) => `${ep.title}\n\n${ep.content}`)
+          .join("\n\n---\n\n");
         exportAsTxt(book.title, content);
         break;
 
-      case 'delete':
-        if (confirm(`「${book.title}」を削除しますか？この操作は取り消せません。`)) {
+      case "delete":
+        if (
+          confirm(`「${book.title}」を削除しますか？この操作は取り消せません。`)
+        ) {
           deleteBook(bookId);
         }
         break;
@@ -120,14 +129,14 @@ export default function HomePage() {
   // ESCキーでダイアログを閉じる
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setShowNewBookDialog(false);
       }
     };
 
     if (showNewBookDialog) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      document.addEventListener("keydown", handleKeyDown);
+      return () => document.removeEventListener("keydown", handleKeyDown);
     }
   }, [showNewBookDialog]);
 
@@ -140,15 +149,19 @@ export default function HomePage() {
         {filteredAndSortedBooks.length === 0 ? (
           <EmptyState
             icon={<BookOpen />}
-            title={query ? '検索結果が見つかりません' : 'ブックがありません'}
-            description={query ? '別のキーワードで検索してみてください' : '新しいブックを作成して執筆を始めましょう'}
+            title={query ? "検索結果が見つかりません" : "ブックがありません"}
+            description={
+              query
+                ? "別のキーワードで検索してみてください"
+                : "新しいブックを作成して執筆を始めましょう"
+            }
             action={
               <Button variant="default" onClick={handleNewBook}>
                 新しいブックを作成
               </Button>
             }
           />
-        ) : viewMode === 'grid' ? (
+        ) : viewMode === "grid" ? (
           <BookGrid
             books={filteredAndSortedBooks}
             onBookClick={handleBookClick}
@@ -182,13 +195,15 @@ export default function HomePage() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">タイトル</label>
+                <label className="block text-sm font-medium mb-1">
+                  タイトル
+                </label>
                 <Input
                   value={newBookTitle}
                   onChange={(e) => setNewBookTitle(e.target.value)}
                   placeholder="ブックのタイトルを入力..."
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       handleCreateBook();
                     }
                   }}

@@ -1,11 +1,11 @@
-import { StateCreator } from 'zustand';
-import { Book, ChatMessage, UIState } from '../types';
+import { StateCreator } from "zustand";
+import { Book, ChatMessage, UIState } from "../types";
 
 export type UiSlice = {
   ui: UIState;
-  setLeftTab: (tab: 'files' | 'chat') => void;
-  setRightTab: (tab: 'dict' | 'material') => void;
-  setRightSubTab: (tab: 'upload' | 'chat') => void;
+  setLeftTab: (tab: "files" | "chat") => void;
+  setRightTab: (tab: "dict" | "material") => void;
+  setRightSubTab: (tab: "upload" | "chat") => void;
   setRightPanelOpen: (open: boolean) => void;
 };
 
@@ -23,11 +23,11 @@ export type BookSlice = {
   activeEpisodeId: string | null;
   selectedEpisodeIds: string[];
   selectedMaterialIds: string[];
-  sortOrder: 'newest' | 'oldest' | 'a-z';
-  viewMode: 'grid' | 'list';
+  sortOrder: "newest" | "oldest" | "a-z";
+  viewMode: "grid" | "list";
   query: string;
-  setSortOrder: (order: 'newest' | 'oldest' | 'a-z') => void;
-  setViewMode: (mode: 'grid' | 'list') => void;
+  setSortOrder: (order: "newest" | "oldest" | "a-z") => void;
+  setViewMode: (mode: "grid" | "list") => void;
   setQuery: (query: string) => void;
   setActiveEpisodeId: (episodeId: string | null) => void;
   setSelectedEpisodeIds: (ids: string[]) => void;

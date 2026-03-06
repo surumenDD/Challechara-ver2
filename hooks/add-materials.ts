@@ -8,30 +8,35 @@ import { extractText } from "@/lib/file";
  * @returns 作成されたMaterial
  */
 export async function addMaterialFromFile(
-    file: File,
-    bookId: string
+  file: File,
+  bookId: string
 ): Promise<Material> {
-    // ファイル名から拡張子を除いたものをtitleとして使用
-    const title = file.name.replace(/\.[^/.]+$/, '');
+  // ファイル名から拡張子を除いたものをtitleとして使用
+  const title = file.name.replace(/\.[^/.]+$/, "");
 
-    // ファイル内容を読み込む
-    const content = await extractText(file);
+  // ファイル内容を読み込む
+  const content = await extractText(file);
 
-    // バックエンドAPIに送信（ポート8080を使用）
-    const response = await fetch(`http://localhost:8080/api/books/${bookId}/materials`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title, content }),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        throw new Error(`Failed to add materials: ${response.status} ${response.statusText}`);
+  // バックエンドAPIに送信（ポート8080を使用）
+  const response = await fetch(
+    `http://localhost:8080/api/books/${bookId}/materials`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ title, content }),
     }
+  );
 
-    const result = await response.json();
-    return result;
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("API Error Response:", errorText);
+    throw new Error(
+      `Failed to add materials: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const result = await response.json();
+  return result;
 }

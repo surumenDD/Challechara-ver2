@@ -1,9 +1,9 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { AppStore } from './store/slices/types';
-import { createUiSlice } from './store/slices/uiSlice';
-import { createChatSlice } from './store/slices/chatSlice';
-import { createBookSlice } from './store/slices/bookSlice';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { AppStore } from "./store/slices/types";
+import { createUiSlice } from "./store/slices/uiSlice";
+import { createChatSlice } from "./store/slices/chatSlice";
+import { createBookSlice } from "./store/slices/bookSlice";
 
 const partialize = (state: AppStore) => ({
   books: state.books,
@@ -16,7 +16,7 @@ const partialize = (state: AppStore) => ({
   sortOrder: state.sortOrder,
   viewMode: state.viewMode,
   query: state.query,
-  ui: state.ui
+  ui: state.ui,
 });
 
 export const useStore = create<AppStore>()(
@@ -24,14 +24,14 @@ export const useStore = create<AppStore>()(
     (...a) => ({
       ...createUiSlice(...a),
       ...createChatSlice(...a),
-      ...createBookSlice(...a)
+      ...createBookSlice(...a),
     }),
     {
-      name: 'app-storage',
-      partialize
+      name: "app-storage",
+      partialize,
     }
   )
 );
 
-export * from './store/types';
-export type { AppStore } from './store/slices/types';
+export * from "./store/types";
+export type { AppStore } from "./store/slices/types";

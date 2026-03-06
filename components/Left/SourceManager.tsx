@@ -1,60 +1,66 @@
-'use client';
+"use client";
 
-import { useState, useRef, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Upload, Search } from 'lucide-react';
-import { useStore } from '@/lib/store';
-import { extractText } from '@/lib/file';
-import { createEpisode } from '@/lib/api/episodes';
-import SourceItem from './SourceItem';
+import { useState, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Upload, Search } from "lucide-react";
+import { useStore } from "@/lib/store";
+import { extractText } from "@/lib/file";
+import { createEpisode } from "@/lib/api/episodes";
+import SourceItem from "./SourceItem";
 
 interface SourceManagerProps {
   bookId: string;
 }
 
 export default function SourceManager({ bookId }: SourceManagerProps) {
-  const {
-    books,
-    setLeftTab,
-    refreshBookFromBackend
-  } = useStore();
+  const { books, setLeftTab, refreshBookFromBackend } = useStore();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'title'>('oldest');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "title">(
+    "oldest"
+  );
   const [dragOver, setDragOver] = useState(false);
   const [activeSourceIds, setActiveSourceIds] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const book = books.find(b => b.id === bookId);
+  const book = books.find((b) => b.id === bookId);
   const bookEpisodes = book?.episodes || [];
 
   // ファイルアップロード処理
-  const handleFiles = useCallback(async (files: FileList) => {
-    // 既存のエピソード数を取得して連番を生成
-    const maxEpisodeNo = bookEpisodes.length > 0 
-      ? Math.max(...bookEpisodes.map(e => e.episode_no || 0))
-      : 0;
-    
-    let episodeCounter = maxEpisodeNo + 1;
-    
-    for (const file of Array.from(files)) {
-      if (file.type.match(/^(text\/|application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document))/)) {
-        try {
-          const content = await extractText(file);
-          const payload = {
-            title: file.name.replace(/\.[^/.]+$/, ''),
-            content,
-            episode_no: episodeCounter++
-          };
-          await createEpisode(bookId, payload);
-          await refreshBookFromBackend(bookId);
-        } catch (error) {
-          console.error('ファイル処理エラー:', error);
+  const handleFiles = useCallback(
+    async (files: FileList) => {
+      // 既存のエピソード数を取得して連番を生成
+      const maxEpisodeNo =
+        bookEpisodes.length > 0
+          ? Math.max(...bookEpisodes.map((e) => e.episode_no || 0))
+          : 0;
+
+      let episodeCounter = maxEpisodeNo + 1;
+
+      for (const file of Array.from(files)) {
+        if (
+          file.type.match(
+            /^(text\/|application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document))/
+          )
+        ) {
+          try {
+            const content = await extractText(file);
+            const payload = {
+              title: file.name.replace(/\.[^/.]+$/, ""),
+              content,
+              episode_no: episodeCounter++,
+            };
+            await createEpisode(bookId, payload);
+            await refreshBookFromBackend(bookId);
+          } catch (error) {
+            console.error("ファイル処理エラー:", error);
+          }
         }
       }
-    }
-  }, [bookId, bookEpisodes, refreshBookFromBackend]);
+    },
+    [bookId, bookEpisodes, refreshBookFromBackend]
+  );
 
   // ドラッグ&ドロップ
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -67,35 +73,45 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
     setDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFiles(files);
-    }
-  }, [handleFiles]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFiles(files);
+      }
+    },
+    [handleFiles]
+  );
 
   // ファイル選択
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      handleFiles(files);
-    }
-  }, [handleFiles]);
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files) {
+        handleFiles(files);
+      }
+    },
+    [handleFiles]
+  );
 
   // フィルタリング・ソート
   const filteredAndSortedEpisodes = bookEpisodes
-    .filter(episode => 
+    .filter((episode) =>
       episode.title.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
       switch (sortOrder) {
-        case 'newest':
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        case 'oldest':
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        case 'title':
+        case "newest":
+          return (
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+        case "title":
           return a.title.localeCompare(b.title);
         default:
           return 0;
@@ -103,15 +119,18 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
     });
 
   // 選択処理
-  const handleToggleSelect = useCallback((episodeId: string) => {
-    const newSelection = activeSourceIds.includes(episodeId)
-      ? activeSourceIds.filter(id => id !== episodeId)
-      : [...activeSourceIds, episodeId];
-    setActiveSourceIds(newSelection);
-  }, [activeSourceIds, setActiveSourceIds]);
+  const handleToggleSelect = useCallback(
+    (episodeId: string) => {
+      const newSelection = activeSourceIds.includes(episodeId)
+        ? activeSourceIds.filter((id) => id !== episodeId)
+        : [...activeSourceIds, episodeId];
+      setActiveSourceIds(newSelection);
+    },
+    [activeSourceIds, setActiveSourceIds]
+  );
 
   const handleSelectAll = useCallback(() => {
-    const allIds = filteredAndSortedEpisodes.map(e => e.id);
+    const allIds = filteredAndSortedEpisodes.map((e) => e.id);
     setActiveSourceIds(allIds);
   }, [filteredAndSortedEpisodes, setActiveSourceIds]);
 
@@ -122,7 +141,7 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
   // 検索実行
   const handleSearch = useCallback(() => {
     if (activeSourceIds.length > 0) {
-      setLeftTab('chat');
+      setLeftTab("chat");
     }
   }, [activeSourceIds, setLeftTab]);
 
@@ -131,10 +150,10 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
       {/* ヘッダー */}
       <div className="p-4 border-b border-gray-200">
         <h2 className="font-semibold text-lg mb-3">ソース管理</h2>
-        
+
         {/* アップロードエリア */}
         <div
-          className={`dropzone p-4 mb-3 cursor-pointer ${dragOver ? 'drag-over' : ''}`}
+          className={`dropzone p-4 mb-3 cursor-pointer ${dragOver ? "drag-over" : ""}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -147,12 +166,10 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
               <br />
               または<span className="text-blue-600">クリックして選択</span>
             </p>
-            <p className="text-xs text-gray-500 mt-1">
-              PDF, TXT, MD, DOCX対応
-            </p>
+            <p className="text-xs text-gray-500 mt-1">PDF, TXT, MD, DOCX対応</p>
           </div>
         </div>
-        
+
         <input
           ref={fileInputRef}
           type="file"
@@ -169,7 +186,7 @@ export default function SourceManager({ bookId }: SourceManagerProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          
+
           <div className="flex gap-2">
             <select
               value={sortOrder}
